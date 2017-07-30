@@ -1,30 +1,26 @@
 import factory
 from factory import Faker, fuzzy
-from . import models
+from ao.msazure.factories.common import ResourceGroupFactory
+from ao.msazure.factories.network import NetworkInterfaceFactory
+from ..models import compute as models
 
-LOCATIONS = [i for i, j in models.LOCATIONS]
+__all__ = [
+    'AvaibilitySetFactory',
+    'StorageAccountFactory',
+    'DiskFactory',
+    'ImagePublisherFactory',
+    'ImageOfferFactory',
+    'ImageSkuFactory',
+    'ImageVersion',
+    'VirtualMachineFactory',
+]
+
+LOCATIONS = [i for i, j in models.common.LOCATIONS]
 DISK_CACHING_MODES = [i for i, j in models.DISK_CACHING_MODES]
 DISK_CREATE_OPTIONS = [i for i, j in models.DISK_CREATE_OPTIONS]
 STORAGE_ACCOUNT_SKUS = [i for i, j in models.STORAGE_ACCOUNT_SKUS]
 STORAGE_ACCOUNT_KINDS = [i for i, j in models.STORAGE_ACCOUNT_KINDS]
 STORAGE_ACCOUNT_ACCESS_TIER = [i for i, j in models.STORAGE_ACCOUNT_ACCESS_TIER]
-
-
-class SubscriptionFactory(factory.django.DjangoModelFactory):
-    uuid = Faker('uuid4')
-
-    class Meta:
-        model = 'msazure.Subscription'
-        django_get_or_create = ('uuid',)
-
-
-class ResourceGroupFactory(factory.django.DjangoModelFactory):
-    subscription = factory.SubFactory(SubscriptionFactory)
-    name = Faker('word')
-
-    class Meta:
-        model = 'msazure.ResourceGroup'
-        django_get_or_create = ('subscription', 'name',)
 
 
 class AvaibilitySetFactory(factory.django.DjangoModelFactory):
@@ -89,13 +85,6 @@ class ImageVersion(factory.django.DjangoModelFactory):
 
     class Meta:
         model = 'msazure.ImageVersion'
-
-
-class NetworkInterfaceFactory(factory.django.DjangoModelFactory):
-    resource_group = factory.SubFactory(ResourceGroupFactory)
-
-    class Meta:
-        model = 'msazure.NetworkInterface'
 
 
 class VirtualMachineFactory(factory.django.DjangoModelFactory):

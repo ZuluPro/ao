@@ -1,12 +1,19 @@
-import uuid
 import json
 from django.db import models
 from django.urls import reverse_lazy as reverse
+from . import common
 
-LOCATIONS = (
-  ('eastus', 'eastus'),
-  ('westus', 'westus'),
-)
+__all__ = [
+    'AvaibilitySet',
+    'StorageAccount',
+    'Disk',
+    'ImagePublisher',
+    'ImageOffer',
+    'ImageSku',
+    'ImageVersion',
+    'VirtualMachine',
+]
+
 DISK_CACHING_MODES = (
   ('None', 'None'),
   ('ReadOnly', 'ReadOnly'),
@@ -33,17 +40,8 @@ STORAGE_ACCOUNT_ACCESS_TIER = (
 )
 
 
-class Subscription(models.Model):
-    uuid = models.UUIDField(default=uuid.uuid4)
-
-
-class ResourceGroup(models.Model):
-    subscription = models.ForeignKey(Subscription)
-    name = models.CharField(max_length=100)
-
-
 class AvaibilitySet(models.Model):
-    resource_group = models.ForeignKey(ResourceGroup)
+    resource_group = models.ForeignKey('msazure.ResourceGroup')
     name = models.CharField(max_length=100)
 
     type = 'Microsoft.Compute/availabilitySets'
@@ -60,7 +58,7 @@ class AvaibilitySet(models.Model):
 
 
 class StorageAccount(models.Model):
-    resource_group = models.ForeignKey(ResourceGroup)
+    resource_group = models.ForeignKey('msazure.ResourceGroup')
     name = models.CharField(max_length=100)
     sku = models.CharField(max_length=30, choices=STORAGE_ACCOUNT_SKUS)
     kind = models.CharField(max_length=30, choices=STORAGE_ACCOUNT_KINDS)
@@ -69,9 +67,9 @@ class StorageAccount(models.Model):
 
 
 class Disk(models.Model):
-    resource_group = models.ForeignKey(ResourceGroup)
+    resource_group = models.ForeignKey('msazure.ResourceGroup')
     name = models.CharField(max_length=100)
-    location = models.CharField(max_length=20, choices=LOCATIONS)
+    location = models.CharField(max_length=20, choices=common.LOCATIONS)
     os_type = models.CharField(max_length=20, blank=True, null=True)
     vhd_uri = models.CharField(max_length=255)
     caching = models.CharField(max_length=10, choices=DISK_CACHING_MODES)
@@ -92,7 +90,7 @@ class Disk(models.Model):
 
 class ImagePublisher(models.Model):
     name = models.CharField(max_length=100)
-    location = models.CharField(max_length=100, choices=LOCATIONS)
+    location = models.CharField(max_length=100, choices=common.LOCATIONS)
 
 
 class ImageOffer(models.Model):
@@ -121,29 +119,12 @@ class ImageVersion(models.Model):
         )
 
 
-class NetworkInterface(models.Model):
-    resource_group = models.ForeignKey(ResourceGroup)
-    name = models.CharField(max_length=100)
-    # primary = models.BooleanField()
-
-    type = 'Microsoft.Network/networkInterfaces'
-
-    @property
-    def id_(self):
-        temp = '/subscriptions/%s/resourceGroups/%s/providers/Microsoft.Network/networkInterfaces/%s'
-        return temp % (
-            self.resource_group.subscription.uuid,
-            self.resource_group.name,
-            self.name,
-        )
-
-
 class VirtualMachine(models.Model):
     vm_id = models.CharField(max_length=128)
     name = models.CharField(max_length=100)
-    location = models.CharField(max_length=20, choices=LOCATIONS)
+    location = models.CharField(max_length=20, choices=common.LOCATIONS)
     tags = models.TextField(max_length=2000, default='{}')
-    resource_group = models.ForeignKey(ResourceGroup)
+    resource_group = models.ForeignKey('msazure.ResourceGroup')
     avaibility_set = models.ForeignKey(AvaibilitySet)
     provisioning_state = models.CharField(max_length=20)
     # Hardware
@@ -158,7 +139,7 @@ class VirtualMachine(models.Model):
     admin_password = models.CharField(max_length=100)
     custom_data = models.TextField(max_length=100)
     # Network
-    network_interface = models.ForeignKey(NetworkInterface)
+    network_interface = models.ForeignKey('msazure.NetworkInterface')
 
     type = "Microsoft.Compute/virtualMachines"
 

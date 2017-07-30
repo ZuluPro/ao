@@ -1,7 +1,13 @@
 import json
 from django.views.generic import View
 from django.http import JsonResponse, Http404
-from . import models, factories
+from .. import models, factories
+
+__all__ = [
+    'VirtualMachineView',
+    'VirtualMachineGetInstanceViewView',
+    'VirtualMachineListView',
+]
 
 
 class VirtualMachineView(View):
