@@ -1,0 +1,153 @@
+{
+  "name": "myvm1",
+  "location": "westus",
+  "tags": {
+    "department": "finance"
+  },
+  "properties": {
+    "licenseType": "Windows_Server",
+    "availabilitySet": {
+      "id": "/subscriptions/{subscription-id}/resourceGroups/myresourcegroup1/providers/Microsoft.Compute/availabilitySets/myav1"
+    },
+    "hardwareProfile": {
+      "vmSize": "Standard_A0"
+    },
+    "storageProfile": {
+      "imageReference": {
+        "publisher": "Publisher Name",
+        "offer": "Publisher Offer",
+        "sku": "Offer SKU",
+        "version": "Version for the image"
+      },
+      "osDisk": {
+        "name": "myosdisk1",
+        "vhd": {
+          "uri": "http://mystorage1.blob.core.windows.net/vhds/myosdisk1.vhd"
+        },
+        "caching": "ReadOnly",
+        "createOption": "fromImage",
+        "encryptionSettings": {
+          "enabled": true,
+          "diskEncryptionKey": {
+            "sourceVault": {
+              "id": "/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.KeyVault/vaults/{vaultName}"
+            },
+            "secretUrl": "https://mykeyvault.vault.azure.net/secrets/{secret-name}/{secret-version}"
+          },
+          "keyEncryptionKey": {
+            "sourceVault": {
+              "id": "/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.KeyVault/vaults/{vaultName}"
+            },
+            "keyUrl": "https://mykeyvault.vault.azure.net/keys/{key-name}/{key-version}"
+          }
+        }
+      },
+      "dataDisks": [
+        {
+          "name": "mydatadisk1",
+          "diskSizeGB": "1",
+          "lun": 0,
+          "vhd": {
+            "uri": "http://mystorage.blob.core.windows.net/vhds/mydatadisk1.vhd"
+          },
+          "createOption": "empty"
+        },
+        {
+          "name": "mydatadisk2",
+          "diskSizeGB": "1",
+          "lun": 1,
+          "vhd": {
+            "uri": "http://mystorage.blob.core.windows.net/vhds/mydatadisk2.vhd"
+          },
+          "createOption": "attach"
+        },
+        {
+          "name": "mydatadisk3",
+          "diskSizeGB": "1",
+          "lun": 2,
+          "image": {
+            "uri": "http: //storagename.blob.core.windows.net/vhds/VMImageName-datadisk.vhd"
+          },
+          "vhd": {
+            "uri": "http://mystorage.blob.core.windows.net/vhds/mydatadisk3.vhd"
+          },
+          "createOption": "fromImage"
+        }
+      ]
+    },
+    "osProfile": {
+      "computerName": "myvm1",
+      "adminUsername": "username",
+      "adminPassword": "password",
+      "customData": "",
+      "windowsConfiguration": {
+        "provisionVMAgent": true,
+        "winRM": {
+          "listeners": [
+            {
+              "protocol": "http"
+            },
+            {
+              "protocol": "https",
+              "certificateUrl": "url-to-key-vault-secret-that-has-the-certificate"
+            }
+          ]
+        },
+        "additionalUnattendContent": {
+          "pass": "oobesystem",
+          "component": "Microsoft-Windows-Shell-Setup",
+          "settingName": "FirstLogonCommands",
+          "content": "<XML unattend content>"
+        },
+        "enableAutomaticUpdates": true,
+        "timeZone": "Pacific Standard Time"
+      },
+      "linuxConfiguration": {
+        "disablePasswordAuthentication": true,
+        "ssh": {
+          "publicKeys": [
+            {
+              "path": "Path-Where-To-Place-Public-Key-On-VM",
+              "keyData": "PEM-Encoded-public-key-file"
+            }
+          ]
+        }
+      },
+      "secrets": [
+        {
+          "sourceVault": {
+            "id": "/subscriptions/{subscription-id}/resourceGroups/myresourcegroup1/providers/Microsoft.KeyVault/vaults/myvault1"
+          },
+          "vaultCertificates": [
+            {
+              "certificateUrl": "https://myvault1.vault.azure.net/secrets/{secretName}/{secretVersion}",
+              "certificateStore": "foo"
+            }
+          ]
+        }
+      ]
+    },
+    "networkProfile": {
+      "networkInterfaces": [
+        {
+          "id": "/subscriptions/{subscription-id}/resourceGroups/myresourceGroup1/providers /Microsoft.Network/networkInterfaces/mynic1",
+          "properties": {
+            "primary": true
+          }
+        },
+        {
+          "id": "/subscriptions/{subscription-id}/resourceGroups/myresourceGroup1/providers /Microsoft.Network/networkInterfaces/mynic2",
+          "properties": {
+            "primary": false
+          }
+        }
+      ]
+    },
+    "diagnosticsProfile": {
+      "bootDiagnostics": {
+        "enabled": true,
+        "storageUri": " http://storageaccount.blob.core.windows.net/"
+      }
+    }
+  }
+}
