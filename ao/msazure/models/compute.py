@@ -5,7 +5,6 @@ from . import common
 
 __all__ = [
     'AvaibilitySet',
-    'StorageAccount',
     'Disk',
     'ImagePublisher',
     'ImageOffer',
@@ -22,21 +21,6 @@ DISK_CACHING_MODES = (
 DISK_CREATE_OPTIONS = (
   ('fromImage', 'fromImage'),
   ('attach', 'attach'),
-)
-STORAGE_ACCOUNT_SKUS = (
-  ('Standard_LRS', 'Standard_LRS'),
-  # ('Standard_ZRS', 'Standard_ZRS'),
-  ('Standard_GRS', 'Standard_GRS'),
-  # ('Standard_RAGRS', 'Standard_RAGRS'),
-  ('Premium_LRS', 'Premium_LRS'),
-)
-STORAGE_ACCOUNT_KINDS = (
-  ('Storage', 'Storage'),
-  ('BlobStorage', 'BlobStorage'),
-)
-STORAGE_ACCOUNT_ACCESS_TIER = (
-  ('Cool', 'Cool'),
-  ('Hot', 'Hot'),
 )
 
 
@@ -57,15 +41,6 @@ class AvaibilitySet(models.Model):
         )
 
 
-class StorageAccount(models.Model):
-    resource_group = models.ForeignKey('msazure.ResourceGroup')
-    name = models.CharField(max_length=100)
-    sku = models.CharField(max_length=30, choices=STORAGE_ACCOUNT_SKUS)
-    kind = models.CharField(max_length=30, choices=STORAGE_ACCOUNT_KINDS)
-    access_tier = models.CharField(max_length=30, choices=STORAGE_ACCOUNT_ACCESS_TIER)
-    tags = models.TextField(max_length=2000, default='{}')
-
-
 class Disk(models.Model):
     resource_group = models.ForeignKey('msazure.ResourceGroup')
     name = models.CharField(max_length=100)
@@ -74,7 +49,7 @@ class Disk(models.Model):
     vhd_uri = models.CharField(max_length=255)
     caching = models.CharField(max_length=10, choices=DISK_CACHING_MODES)
     create_option = models.CharField(max_length=20, choices=DISK_CREATE_OPTIONS)
-    storage_account = models.ForeignKey(StorageAccount)
+    storage_account = models.ForeignKey('msazure.StorageAccount')
 
     type = "Microsoft.Compute/disks"
 

@@ -169,7 +169,9 @@ class PublicIp(models.Model):
     @property
     def detail_view(self):
         data = {
+            'name': self.name,
             'location': self.location,
+            'id': self.id_,
             'etag': 'W/"%s"' % self.etag,
             'tags': {},
             'properties': {
@@ -182,6 +184,7 @@ class PublicIp(models.Model):
                 'dnsSettings': {
                     'domainNameLabel': self.domain_name_label,
                     'reverseFqdn': self.reverse_fqdn,
+                    'fqdn': '%s.%s.cloudapp.azure.com.' % (self.reverse_fqdn, self.location),
                 }
             }
         }

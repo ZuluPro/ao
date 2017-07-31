@@ -2,11 +2,11 @@ import factory
 from factory import Faker, fuzzy
 from ao.msazure.factories.common import ResourceGroupFactory
 from ao.msazure.factories.network import NetworkInterfaceFactory
+from ao.msazure.factories.storage import StorageAccountFactory
 from ..models import compute as models
 
 __all__ = [
     'AvaibilitySetFactory',
-    'StorageAccountFactory',
     'DiskFactory',
     'ImagePublisherFactory',
     'ImageOfferFactory',
@@ -18,9 +18,6 @@ __all__ = [
 LOCATIONS = [i for i, j in models.common.LOCATIONS]
 DISK_CACHING_MODES = [i for i, j in models.DISK_CACHING_MODES]
 DISK_CREATE_OPTIONS = [i for i, j in models.DISK_CREATE_OPTIONS]
-STORAGE_ACCOUNT_SKUS = [i for i, j in models.STORAGE_ACCOUNT_SKUS]
-STORAGE_ACCOUNT_KINDS = [i for i, j in models.STORAGE_ACCOUNT_KINDS]
-STORAGE_ACCOUNT_ACCESS_TIER = [i for i, j in models.STORAGE_ACCOUNT_ACCESS_TIER]
 
 
 class AvaibilitySetFactory(factory.django.DjangoModelFactory):
@@ -30,17 +27,6 @@ class AvaibilitySetFactory(factory.django.DjangoModelFactory):
     class Meta:
         model = 'msazure.AvaibilitySet'
         django_get_or_create = ('resource_group', 'name',)
-
-
-class StorageAccountFactory(factory.django.DjangoModelFactory):
-    resource_group = factory.SubFactory(ResourceGroupFactory)
-    name = Faker('word')
-    sku = fuzzy.FuzzyChoice(STORAGE_ACCOUNT_SKUS)
-    kind = fuzzy.FuzzyChoice(STORAGE_ACCOUNT_KINDS)
-    access_tier = fuzzy.FuzzyChoice(STORAGE_ACCOUNT_ACCESS_TIER)
-
-    class Meta:
-        model = 'msazure.StorageAccount'
 
 
 class DiskFactory(factory.django.DjangoModelFactory):
