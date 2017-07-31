@@ -1,3 +1,23 @@
+class PublicIpData(dict):
+    def __init__(self, resource_group, allocation_method, ip_version, idle_timeout, domain_name_label, reverse_fqdn,  *args, **kwargs):
+        super(PublicIpData, self).__init__(*args, **kwargs)
+        self.resource_group = resource_group
+        self.update({
+            'properties': {
+                'publicIPAllocationMethod': allocation_method,
+                'dnsSettings': {}
+            },
+        })
+        if ip_version:
+            self['properties']['publicIPAddressVersion'] = ip_version
+        if idle_timeout:
+            self['properties']['idleTimeoutInMinutes'] = idle_timeout
+        if domain_name_label:
+            self['properties']['dnsSettings']['domainNameLabel'] = domain_name_label
+        if reverse_fqdn:
+            self['properties']['dnsSettings']['reverseFqdn'] = reverse_fqdn
+
+
 class IpConfigurationData(dict):
     def __init__(self, resource_group, name, subnet, private_ip, private_ip_allocation_method, public_ip, load_balancer, backend_address_pool, inbound_nat_rule, *args, **kwargs):
         super(IpConfigurationData, self).__init__(*args, **kwargs)

@@ -4,12 +4,26 @@ from ao.msazure import factories
 from . import models
 
 
+class PublicIpDataFactory(factory.Factory):
+    name = Faker('word')
+    resource_group = factory.SubFactory(factories.ResourceGroupFactory)
+    location = fuzzy.FuzzyChoice(factories.compute.LOCATIONS)
+    allocation_method = fuzzy.FuzzyChoice(factories.IP_ALLOCATION_METHODS)
+    ip_version = 'ipv4'
+    idle_timeout = fuzzy.FuzzyInteger(4, 30)
+    domain_name_label = Faker('word')
+    reverse_fqdn = Faker('domain_name')
+
+    class Meta:
+        model = models.PublicIpData
+
+
 class IpConfigurationDataFactory(factory.Factory):
     name = Faker('word')
     resource_group = factory.SubFactory(factories.ResourceGroupFactory)
     subnet = factory.SubFactory(factories.SubNetworkFactory, virtual_network__resource_group=factory.SelfAttribute('...resource_group'))
     private_ip = Faker('ipv4')
-    private_ip_allocation_method = fuzzy.FuzzyChoice(factories.PRIVATE_IP_ALLOCATION_METHODS)
+    private_ip_allocation_method = fuzzy.FuzzyChoice(factories.IP_ALLOCATION_METHODS)
     subnet = factory.SubFactory(factories.SubNetworkFactory, virtual_network__resource_group=factory.SelfAttribute('...resource_group'))
     public_ip = factory.SubFactory(factories.PublicIpFactory, resource_group=factory.SelfAttribute('..resource_group'))
     backend_address_pool = factory.SubFactory(factories.BackendAddressPool, load_balancer=factory.SelfAttribute('..load_balancer'))

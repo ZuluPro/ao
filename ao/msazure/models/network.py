@@ -1,3 +1,4 @@
+import uuid
 from django.db import models
 from django.urls import reverse_lazy as reverse
 from . import common
@@ -14,9 +15,13 @@ __all__ = [
     'IpConfiguration',
 ]
 
-PRIVATE_IP_ALLOCATION_METHODS = (
+IP_ALLOCATION_METHODS = (
   ('Static', 'Static'),
   ('Dynamic', 'Dynamic'),
+)
+IP_VERSIONS = (
+    ('ipv4', 'IPv4'),
+    ('ipv6', 'IPv6'),
 )
 
 
@@ -54,9 +59,68 @@ class VirtualNetwork(models.Model):
         )
 
 
+class RouteTable(models.Model):
+    name = models.CharField(max_length=100)
+    resource_group = models.ForeignKey('msazure.ResourceGroup')
+
+    type = 'Microsoft.Network/routeTables'
+
+    @property
+    def id_(self):
+        temp = '/subscriptions/%s/resourceGroups/%s/providers/%s/%s'
+        return temp % (
+            self.resource_group.subscription.uuid,
+            self.resource_group.name,
+            self.type,
+            self.name,
+        )
+
+
 class SubNetwork(models.Model):
     name = models.CharField(max_length=100)
     virtual_network = models.ForeignKey(VirtualNetwork)
+    etag = models.CharField(max_length=100)
+    provisioning_state = models.CharField(max_length=20)
+    address_prefix = models.CharField(max_length=18)
+    security_group = models.ForeignKey(NetworkSecurityGroup)
+    route_table = models.ForeignKey(RouteTable)
+
+    type = 'Microsoft.Network/networkInterfaces'
+
+    @property
+    def id_(self):
+        temp = '/subscriptions/%s/resourceGroups/%s/providers/Microsoft.Network/virtualNetworks/%s/subnets/%s'
+        return temp % (
+            self.virtual_network.resource_group.subscription.uuid,
+            self.virtual_network.resource_group.name,
+            self.virtual_network.name,
+            self.name,
+        )
+
+    def get_detail_view_url(self):
+        return reverse('subnetwork', kwargs={
+            'subscription_id': self.virtual_network.resource_group.subscription.uuid,
+            'resource_group': self.virtual_network.resource_group.name,
+            'net_name': self.virtual_network.name,
+            'subnet_name': self.name,
+        })
+
+    @property
+    def detail_view(self):
+        data = {
+            'name': self.name,
+            'id': self.id_,
+            'etag': self.etag,
+            'properties': {
+                'provisioningState': self.provisioning_state,
+                'addressPrefix': self.address_prefix,
+                'networkSecurityGroup': {'id': self.security_group.id_},
+                'routeTable': {'id': self.route_table.id_},
+                'ipConfigurations': [{'id': ipconf.id_} for ipconf in self.ipconfiguration_set.all()]
+            }
+        }
+        return data
+
 
     @property
     def id_(self):
@@ -73,6 +137,15 @@ class PublicIp(models.Model):
     name = models.CharField(max_length=100)
     ip = models.GenericIPAddressField()
     resource_group = models.ForeignKey('msazure.ResourceGroup')
+    etag = models.CharField(max_length=100)
+    uuid = models.UUIDField(default=uuid.uuid4)
+    provisioning_state = models.CharField(max_length=20)
+    location = models.CharField(max_length=20, choices=common.LOCATIONS)
+    allocation_method = models.CharField(max_length=10, choices=IP_ALLOCATION_METHODS)
+    ip_version = models.CharField(max_length=4, choices=IP_VERSIONS)
+    idle_timeout = models.PositiveSmallIntegerField(default=30)
+    domain_name_label = models.CharField(max_length=100)
+    reverse_fqdn = models.CharField(max_length=100)
 
     type = 'Microsoft.Network/publicIPAddresses'
 
@@ -85,6 +158,39 @@ class PublicIp(models.Model):
             self.type,
             self.name,
         )
+
+    def get_detail_view_url(self):
+        return reverse('public-ip', kwargs={
+            'subscription_id': self.resource_group.subscription.uuid,
+            'resource_group': self.resource_group.name,
+            'ip_name': self.name,
+        })
+
+    @property
+    def detail_view(self):
+        data = {
+            'location': self.location,
+            'etag': 'W/"%s"' % self.etag,
+            'tags': {},
+            'properties': {
+                'resourceGuid': str(self.uuid),
+                'provisioningState': self.provisioning_state,
+                'ipAddress': self.ip,
+                'publicIPAllocationMethod': self.allocation_method,
+                'publicIPAddressVersion': self.ip_version,
+                'idleTimeoutInMinutes': self.idle_timeout,
+                'dnsSettings': {
+                    'domainNameLabel': self.domain_name_label,
+                    'reverseFqdn': self.reverse_fqdn,
+                }
+            }
+        }
+        if self.ipconfiguration_set.exists():
+            ipconf = self.ipconfiguration_set.first()
+            data['properties']['ipConfiguration'] = {
+                'id': ipconf.id_,
+            }
+        return data
 
 
 class LoadBalancer(models.Model):
@@ -220,7 +326,7 @@ class IpConfiguration(models.Model):
     provisioning_state = models.CharField(max_length=30)
     etag = models.CharField(max_length=100)
     private_ip = models.GenericIPAddressField()
-    private_ip_allocation_method = models.CharField(max_length=10, choices=PRIVATE_IP_ALLOCATION_METHODS)
+    private_ip_allocation_method = models.CharField(max_length=10, choices=IP_ALLOCATION_METHODS)
     public_ip = models.ForeignKey(PublicIp)
     backend_address_pool = models.ForeignKey(BackendAddressPool)
     inbound_nat_rules = models.ManyToManyField(InboundNatRule)
