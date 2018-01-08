@@ -18,31 +18,6 @@ from . import serializers
 from . import exceptions
 
 
-class AuthenticationFailedResponse(JsonResponse):
-    def __init__(self, data=None, *args, **kwargs):
-        data = {
-            "error": {
-                "error_code": "AUTHENTICATION_FAILED",
-                "error_message": "Authentication failed using the given username and password."
-            }
-        }
-        super(AuthenticationFailedResponse, self).__init__(data=data,
-                                                           *args, **kwargs)
-        self.status_code = 401
-
-
-class BadRequestResponse(JsonResponse):
-    def __init__(self, err_code, err_message, data=None, *args, **kwargs):
-        data = {
-            "error": {
-                "error_code": err_code,
-                "error_message": err_message,
-            }
-        }
-        super(BadRequestResponse, self).__init__(data=data, *args, **kwargs)
-        self.status_code = 400
-
-
 class APIViewSet(viewsets.ViewSet):
     authentication_classes = (authentications.UpCloudAuthentication,)
     permission_classes = (permissions.UpCloudPermission,)
@@ -54,20 +29,6 @@ class ServerViewSet(APIViewSet):
     not_exist_exception = exceptions.ServerDoesNotExist
     not_forbidden_exception = exceptions.ServerForbidden
 
-    def list(self, request):
-        data = {'servers': {'server': []}}
-        servers = models.Server.objects.all()
-        if self.access_level > 0:
-            account = servers.filter(account=self.user)
-        data['servers']['server'] = [s.detail_format for s in servers]
-        return JsonResponse(data)
-
-    def create(self, request):
-        serializer = serializers.PostServerSerializer(data=self.request.data)
-        if serializer.is_valid():
-            data = serializer.create(self.request.user)
-            return views.Response(data, status=202)
-
     def _get_server(self, pk=None):
         servers = models.Server.objects.filter(uuid=pk)
         exists = servers.exists()
@@ -77,6 +38,20 @@ class ServerViewSet(APIViewSet):
         if server is None and self.access_level == 0:
             server = factories.ServerFactory(uuid=pk, account=self.request.user)
         return server, exists
+
+    def list(self, request):
+        data = {'servers': {'server': []}}
+        servers = models.Server.objects.all()
+        if self.access_level > 0:
+            servers = servers.filter(account=self.request.user)
+        data['servers']['server'] = [s.detail_format for s in servers]
+        return JsonResponse(data)
+
+    def create(self, request):
+        serializer = serializers.PostServerSerializer(data=self.request.data)
+        if serializer.is_valid():
+            data = serializer.create(self.request.user)
+            return views.Response(data, status=202)
 
     def retrieve(self, request, pk=None):
         server, exists = self._get_server(pk)
@@ -148,3 +123,67 @@ class ServerViewSet(APIViewSet):
         server.delete()
         # Response
         return HttpResponse('', status=204)
+
+
+class IpAddressViewSet(APIViewSet):
+    lookup_value_regex = '[0-9a-z:.]+'
+    access_level = settings.IP_ADDRESS_ACCESS_LEVEL
+    action_level = settings.IP_ADDRESS_ACTION_LEVEL
+    not_exist_exception = exceptions.IpAddressNotFound
+    not_forbidden_exception = exceptions.IpAddressForbidden
+
+    def _get_ip(self, pk=None):
+        ips = models.IpAddress.objects.filter(address=pk)
+        exists = ips.exists()
+        if self.access_level > 0:
+            ips = ips.filter(server__account=self.request.user)
+        ip = ips.first()
+        if ip is None and self.access_level == 0:
+            ip = factories.IpAddressFactory(address=pk, server__account=self.request.user)
+        return ip, exists
+
+    def list(self, request):
+        ips = models.IpAddress.objects.all()
+        if self.access_level > 0:
+            ips = ips.filter(account=self.request.user)
+        serializer = serializers.IpAddressListSerializer(ips, many=True)
+        data = {'ip_addresses': {'ip_address': serializer.data}}
+        return JsonResponse(data)
+
+    def retrieve(self, request, pk=None):
+        ip, exists = self._get_ip(pk)
+        try:
+            self.check_object_permissions(request, (ip, exists))
+        except exceptions.APIException as err:
+            return err.get_response()
+        serializer = serializers.IpAddressSerializer(ip)
+        data = {'ip_address': serializer.data}
+        return JsonResponse(data)
+
+    def create(self, request):
+        serializer = serializers.PostIpAddressSerializer(data=self.request.data)
+        if serializer.is_valid():
+            data = serializer.create(self.request.user)
+            return views.Response(data, status=202)
+
+    def update(self, request, pk=None):
+        ip, exists = self._get_ip(pk)
+        try:
+            self.check_object_permissions(request, (ip, exists))
+        except exceptions.APIException as err:
+            return err.get_response()
+        serializer = serializers.PutIpAddressSerializer(data=self.request.data)
+        if serializer.is_valid():
+            ip = serializer.update(ip, serializer.validated_data)
+            display_serializer = serializers.IpAddressSerializer(ip)
+            data = display_serializer.data
+            return views.Response(data, status=202)
+
+    def delete(self, request, pk=None):
+        ip, exists = self._get_ip(pk)
+        try:
+            self.check_object_permissions(request, (ip, exists))
+        except exceptions.APIException as err:
+            return err.get_response()
+        ip.delete()
+        return views.Response('', status=204)

@@ -1,4 +1,5 @@
 import random
+import ipaddress
 import faker
 import factory
 from factory import fuzzy
@@ -48,6 +49,9 @@ def make_memory_amount(server):
     return server.plan.memory_amount
 
 
+SERVER_STATES = [i for i, j in models.SERVER_STATES]
+SERVER_BOOT_ORDERS = [i for i, j in models.SERVER_BOOT_ORDERS]
+NIC_MODELS = [i for i, j in models.NIC_MODELS]
 class ServerFactory(factory.django.DjangoModelFactory):
     class Meta:
         model = 'upcloud.Server'
@@ -55,12 +59,12 @@ class ServerFactory(factory.django.DjangoModelFactory):
     title = factory.Faker('name')
     hostname = factory.Faker('domain_name')
     licence = 0
-    state = fuzzy.FuzzyChoice(models.SERVER_STATES)
+    state = fuzzy.FuzzyChoice(SERVER_STATES)
     zone = factory.SubFactory(ZoneFactory)
     firewall = fuzzy.FuzzyChoice((False, True))
-    state = fuzzy.FuzzyChoice(models.SERVER_BOOT_ORDERS)
+    state = fuzzy.FuzzyChoice(SERVER_BOOT_ORDERS)
     host = fuzzy.FuzzyInteger(1, 8000000000)
-    nic_model = fuzzy.FuzzyChoice(models.NIC_MODELS)
+    nic_model = fuzzy.FuzzyChoice(NIC_MODELS)
     timezone = factory.Faker('timezone')
     account = factory.SubFactory(AccountFactory)
 
@@ -86,14 +90,33 @@ class StorageFactory(factory.django.DjangoModelFactory):
     account = factory.SubFactory(AccountFactory)
 
 
+def make_ip_family(ip):
+    if not ip.address:
+        ip.address = fake.ipv4()
+    family = 'ipv%d' % ipaddress.ip_address(ip.address).version
+    return family
+
+
+def make_ip_access(ip):
+    access = 'public'
+    if not ip.address:
+        if ip.family == 'ipv6':
+            ip.address = fake.ipv6()
+        else:
+            ip.address = fake.ipv4()
+    for prefix in ('10.', '172.16', '192.168'):
+        if ip.address.startswith(prefix):
+            access = 'private'
+    return access
+
+
 class IpAddressFactory(factory.django.DjangoModelFactory):
     class Meta:
         model = 'upcloud.IpAddress'
 
-    access = fuzzy.FuzzyChoice(models.IP_ACCESSES)
     address = factory.Faker('ipv4')
-    family = fuzzy.FuzzyChoice(models.IP_FAMILIES)
+    family = factory.LazyAttribute(make_ip_family)
+    access = factory.LazyAttribute(make_ip_access)
     part_of_plan = fuzzy.FuzzyChoice((False, True))
-    hostname = factory.Faker('domain_name')
+    ptr_record = factory.Faker('domain_name')
     server = factory.SubFactory(ServerFactory)
-    account = factory.SubFactory(AccountFactory)

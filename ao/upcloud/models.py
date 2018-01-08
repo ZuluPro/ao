@@ -25,7 +25,7 @@ NIC_MODELS = (
     ('virtio', 'virtio'),
     ('rtl8139', 'rtl8139'),
 )
-STORAGE_STATES = IP_ACCESSES = (
+STORAGE_STATES = (
     ('online', 'online'),
     ('maintenance', 'maintenance'),
     ('cloning', 'cloning'),
@@ -38,7 +38,7 @@ STORAGE_TYPES = (
     ('cdrom', 'cdrom'),
     ('template', 'template'),
 )
-STORAGE_ACCESS = (
+STORAGE_ACCESS = IP_ACCESSES = (
     ('private', 'private'),
     ('public', 'public'),
 )
@@ -226,13 +226,12 @@ class Storage(models.Model):
 
 
 class IpAddress(models.Model):
-    access = models.CharField(max_length=7, choices=IP_ACCESSES)
-    address = models.GenericIPAddressField()
-    family = models.CharField(max_length=4, choices=IP_FAMILIES)
-    part_of_plan = models.BooleanField()
-    hostname = models.CharField(max_length=128)
-    server = models.ForeignKey(Server, null=True, blank=True)
-    account = models.ForeignKey(Account, null=True, blank=True)
+    address = models.GenericIPAddressField(primary_key=True)
+    access = models.CharField(max_length=7, choices=IP_ACCESSES, default='public', blank=True)
+    family = models.CharField(max_length=4, choices=IP_FAMILIES, default='ipv4', blank=True)
+    part_of_plan = models.BooleanField(default=False, blank=True)
+    ptr_record = models.CharField(max_length=128)
+    server = models.ForeignKey(Server)
 
     class Meta:
         app_label = 'upcloud'

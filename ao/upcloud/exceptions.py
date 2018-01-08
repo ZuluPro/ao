@@ -38,3 +38,15 @@ class ServerStateIllegal(APIException):
     status_code = 409
     default_detail = 'SERVER_STATE_ILLEGAL' 
     default_code = 'The server is in a state in which it cannot be used.'
+
+
+class IpAddressNotFound(APIException):
+    status_code = 404
+    default_detail = 'IP_ADDRESS_NOT_FOUND' 
+    default_code = 'The IP address does not exist.'
+
+
+class IpAddressForbidden(APIException):
+    status_code = 403
+    default_detail = 'IP_ADDRESS_FORBIDDEN' 
+    default_code = 'The IP address does not exist.'

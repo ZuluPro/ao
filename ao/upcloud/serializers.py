@@ -169,3 +169,76 @@ class RestartServerSerializer(StopServerSerializer):
 
 class PostRestartServerSerializer(serializers.Serializer):
     restart_server = RestartServerSerializer()
+
+
+class IpAddressSerializer(serializers.ModelSerializer):
+    part_of_plan = YesNoField(required=False)
+    server = serializers.PrimaryKeyRelatedField(queryset=models.Server.objects.all(), required=False)
+
+    action_level = settings.IP_ADDRESS_ACTION_LEVEL
+
+    class Meta:
+        model = models.IpAddress
+        fields = '__all__'
+
+    def validate_server(self, value):
+        exists = models.Server.objects.filter(uuid=value.uuid).exists()
+        if exists:
+            value = str(models.Server.objects.get(uuid=value.uuid).uuid)
+        elif not exists and self.action_level == 0:
+            value = str(factories.ServerFactory(uuid=value.uuid).uuid)
+        else:
+            raise serializers.ValidationError('')
+        return value
+
+
+class IpAddressListSerializer(IpAddressSerializer):
+    part_of_plan = YesNoField(required=False, write_only=True)
+
+    class Meta:
+        model = models.IpAddress
+        fields = '__all__'
+
+
+class CreateIpAddressSerializer(IpAddressSerializer):
+    class Meta:
+        model = models.IpAddress
+        fields = ('family', 'access', 'server')
+
+
+class ModifyIpAddressSerializer(IpAddressSerializer):
+    class Meta:
+        model = models.IpAddress
+        fields = ('ptr_record',)
+    
+
+class PostIpAddressSerializer(serializers.Serializer):
+    ip_address = CreateIpAddressSerializer()
+
+    def create(self, account, *args, **kwargs):
+        ip_data = self.validated_data['ip_address']
+        if settings.IP_ADDRESS_ACTION_LEVEL == 0:
+            server = models.Server.objects.filter(uuid=ip_data.pop('server')).first()
+            ip_data.update(server=server,
+                           server__account=account)
+            instance = factories.IpAddressFactory(**ip_data)
+        else:
+            # TODO: Manage public/private
+            address = factories.fake.ipv4() if ip_data['family'] == 'IPV4' else factories.fake.ipv6()
+            ptr_record = '%s.v6.zone.host.upcloud.com' % factories.fake.user_name()
+            ip_data.update(address=address,
+                           part_of_plan=False,
+                           ptr_record=ptr_record)
+            instance = IpAddress.objets.create(**ip_data)
+            instance.family = factories.make_ip_family(instance)
+        serializer = IpAddressListSerializer(instance)
+        return {'ip_address': serializer.data}
+    
+
+class PutIpAddressSerializer(serializers.Serializer):
+    ip_address = ModifyIpAddressSerializer()
+
+    def update(self, instance, validated_data):
+        instance.ptr_record = validated_data['ip_address']['ptr_record']
+        instance.save()
+        return instance
