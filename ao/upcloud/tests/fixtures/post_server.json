@@ -1,0 +1,28 @@
+{
+  "server": {
+    "zone": "fi-hel1",
+    "title": "My Debian server",
+    "hostname": "debian.example.com",
+    "plan": "2xCPU-2GB",
+    "storage_devices": {
+      "storage_device": [
+        {
+          "action": "clone",
+          "storage": "01000000-0000-4000-8000-000020030100",
+          "title": "Debian from a template",
+          "size": 50,
+          "tier": "maxiops"
+        }
+      ]
+    },
+    "login_user": {
+       "username": "upclouduser",
+       "ssh_keys": {
+         "ssh_key": [
+            "ssh-rsa AAAAB3NzaC1yc2EAA[...]ptshi44x user@some.host",
+            "ssh-dss AAAAB3NzaC1kc3MAA[...]VHRzAA== someuser@some.other.host"
+          ]
+       }
+    }
+  }
+}
