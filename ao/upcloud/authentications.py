@@ -16,13 +16,14 @@ class UpCloudAuthentication(authentication.BaseAuthentication):
             if k.startswith('HTTP_')
         ])
         account = None
-        if 'Authorization' in self.headers:
-            match = REG_API_KEY.match(request.headers['Authorization'])
+        match = REG_API_KEY.match(self.headers.get('HTTP_AUTHORIZATION', ''))
+        if 'HTTP_AUTHORIZATION' in self.headers:
             if match is not None:
                 api_key = match.groups()[0]
                 account = models.Account.objects.filter(api_key=api_key).first()
                 if account is not None:
                     return account, None
         if account is None and settings.AUTHENTICATION_LEVEL == 0:
-            account = factories.AccountFactory()
+            data = {} if match is None else {'api_key': match.groups()[0]}
+            account = factories.AccountFactory(**data)
             return account, None

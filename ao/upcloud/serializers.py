@@ -5,6 +5,12 @@ from . import models
 from . import factories
 
 
+class SerializerMixin(object):
+    def __init__(self, *args, **kwargs):
+        self.account = kwargs.pop('account', None)
+        super(SerializerMixin, self).__init__(*args, **kwargs)
+
+
 class BoolField(serializers.Field):
     def to_representation(self, obj):
         return self.TRUE if obj else self.FALSE
@@ -169,6 +175,19 @@ class RestartServerSerializer(StopServerSerializer):
 
 class PostRestartServerSerializer(serializers.Serializer):
     restart_server = RestartServerSerializer()
+    
+
+class ListIpAddressSerializer(serializers.ListSerializer):
+    """list serializer"""
+    def to_representation(self, instance):
+        data = super(ListIpAddressSerializer, self).to_representation(instance)
+        data = {'ip_addresses': {'ip_address': data}}
+        return data
+
+    @property
+    def data(self):
+        super(ListIpAddressSerializer, self).data
+        return self._data
 
 
 class IpAddressSerializer(serializers.ModelSerializer):
@@ -191,6 +210,10 @@ class IpAddressSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError('')
         return value
 
+    def to_representation(self, instance):
+        data = super(IpAddressSerializer, self).to_representation(instance)
+        return data
+
 
 class IpAddressListSerializer(IpAddressSerializer):
     part_of_plan = YesNoField(required=False, write_only=True)
@@ -198,29 +221,35 @@ class IpAddressListSerializer(IpAddressSerializer):
     class Meta:
         model = models.IpAddress
         fields = '__all__'
+        list_serializer_class = ListIpAddressSerializer
+
+
+class IpAddressDetailSerializer(IpAddressSerializer):
+    class Meta:
+        model = models.IpAddress
+        fields = '__all__'
+
+    def to_representation(self, instance):
+        data = super(IpAddressDetailSerializer, self).to_representation(instance)
+        data = {'ip_address': data}
+        return data
 
 
 class CreateIpAddressSerializer(IpAddressSerializer):
     class Meta:
         model = models.IpAddress
         fields = ('family', 'access', 'server')
-
-
-class ModifyIpAddressSerializer(IpAddressSerializer):
-    class Meta:
-        model = models.IpAddress
-        fields = ('ptr_record',)
     
 
-class PostIpAddressSerializer(serializers.Serializer):
+class PostIpAddressSerializer(SerializerMixin, serializers.Serializer):
     ip_address = CreateIpAddressSerializer()
 
-    def create(self, account, *args, **kwargs):
+    def save(self, *args, **kwargs):
         ip_data = self.validated_data['ip_address']
         if settings.IP_ADDRESS_ACTION_LEVEL == 0:
             server = models.Server.objects.filter(uuid=ip_data.pop('server')).first()
             ip_data.update(server=server,
-                           server__account=account)
+                           server__account=self.account)
             instance = factories.IpAddressFactory(**ip_data)
         else:
             # TODO: Manage public/private
@@ -231,14 +260,27 @@ class PostIpAddressSerializer(serializers.Serializer):
                            ptr_record=ptr_record)
             instance = IpAddress.objets.create(**ip_data)
             instance.family = factories.make_ip_family(instance)
-        serializer = IpAddressListSerializer(instance)
-        return {'ip_address': serializer.data}
+        return instance
+
+
+class ModifyIpAddressSerializer(IpAddressSerializer):
+    class Meta:
+        model = models.IpAddress
+        fields = ('ptr_record',)
+
+    def update(self, *args, **kwargs):
+        pass
     
 
-class PutIpAddressSerializer(serializers.Serializer):
+class PutIpAddressSerializer(SerializerMixin, serializers.Serializer):
     ip_address = ModifyIpAddressSerializer()
 
-    def update(self, instance, validated_data):
-        instance.ptr_record = validated_data['ip_address']['ptr_record']
-        instance.save()
-        return instance
+    def save(self, *args, **kwargs):
+        self.instance.ptr_record = self.validated_data['ip_address']['ptr_record']
+        self.instance.save()
+        return self.instance
+
+    @property
+    def data(self):
+        serializer = IpAddressListSerializer(self.instance)
+        return serializer.data

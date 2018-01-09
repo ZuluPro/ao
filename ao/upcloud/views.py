@@ -1,7 +1,7 @@
 import json
 import sched
 
-from django.http import HttpResponse, JsonResponse
+from django.http import HttpResponse, JsonResponse, Http404
 from django.views.generic import View
 
 from rest_framework import views
@@ -18,12 +18,57 @@ from . import serializers
 from . import exceptions
 
 
-class APIViewSet(viewsets.ViewSet):
+class APIViewSetMixin(object):
     authentication_classes = (authentications.UpCloudAuthentication,)
     permission_classes = (permissions.UpCloudPermission,)
 
+    account_field = None
 
-class ServerViewSet(APIViewSet):
+    def get_queryset(self):
+        qs = self.queryset.all()
+        if self.access_level > 0:
+            qs = qs.filter(**{self.account_field: self.request.user})
+        return qs
+
+    def get_serializer(self, *args, **kwargs):
+        if self.request.method == 'GET':
+            if kwargs.get('many'):
+                serializer_class = self.list_serializer_class
+            else:
+                serializer_class = self.retrieve_serializer_class
+        elif self.request.method == 'POST':
+            serializer_class = self.create_serializer_class
+        elif self.request.method == 'PUT':
+            serializer_class = self.update_serializer_class
+        kwargs['context'] = self.get_serializer_context()
+        return serializer_class(*args, **kwargs)
+
+    def get_serializer_context(self):
+        return {
+            'account': self.request.user,
+        }
+
+    def _get_factory_kwargs(self):
+        kwargs = {}
+        if self.account_field is not None:
+            kwargs[self.account_field] = self.request.user
+        return kwargs
+
+    def get_object(self):
+        try:
+            obj = super(APIViewSetMixin, self).get_object()
+        except Http404 as err:
+            if self.access_level == 0:
+                obj_attrs = self._get_factory_kwargs()
+                obj_attrs.update(self.kwargs)
+                obj = self.factory(**obj_attrs)
+            else:
+                raise
+        return obj
+
+
+
+class ServerViewSet(APIViewSetMixin, viewsets.ViewSet):
     access_level = settings.SERVER_ACCESS_LEVEL
     action_level = settings.SERVER_ACTION_LEVEL
     not_exist_exception = exceptions.ServerDoesNotExist
@@ -125,65 +170,22 @@ class ServerViewSet(APIViewSet):
         return HttpResponse('', status=204)
 
 
-class IpAddressViewSet(APIViewSet):
+class IpAddressViewSet(APIViewSetMixin, viewsets.ModelViewSet):
+    queryset = models.IpAddress.objects.all()
+
     lookup_value_regex = '[0-9a-z:.]+'
+    lookup_field = 'address'
+
+    list_serializer_class = serializers.IpAddressListSerializer
+    retrieve_serializer_class = serializers.IpAddressDetailSerializer
+    create_serializer_class = serializers.PostIpAddressSerializer
+    update_serializer_class = serializers.PutIpAddressSerializer
+
     access_level = settings.IP_ADDRESS_ACCESS_LEVEL
     action_level = settings.IP_ADDRESS_ACTION_LEVEL
+
     not_exist_exception = exceptions.IpAddressNotFound
     not_forbidden_exception = exceptions.IpAddressForbidden
 
-    def _get_ip(self, pk=None):
-        ips = models.IpAddress.objects.filter(address=pk)
-        exists = ips.exists()
-        if self.access_level > 0:
-            ips = ips.filter(server__account=self.request.user)
-        ip = ips.first()
-        if ip is None and self.access_level == 0:
-            ip = factories.IpAddressFactory(address=pk, server__account=self.request.user)
-        return ip, exists
-
-    def list(self, request):
-        ips = models.IpAddress.objects.all()
-        if self.access_level > 0:
-            ips = ips.filter(account=self.request.user)
-        serializer = serializers.IpAddressListSerializer(ips, many=True)
-        data = {'ip_addresses': {'ip_address': serializer.data}}
-        return JsonResponse(data)
-
-    def retrieve(self, request, pk=None):
-        ip, exists = self._get_ip(pk)
-        try:
-            self.check_object_permissions(request, (ip, exists))
-        except exceptions.APIException as err:
-            return err.get_response()
-        serializer = serializers.IpAddressSerializer(ip)
-        data = {'ip_address': serializer.data}
-        return JsonResponse(data)
-
-    def create(self, request):
-        serializer = serializers.PostIpAddressSerializer(data=self.request.data)
-        if serializer.is_valid():
-            data = serializer.create(self.request.user)
-            return views.Response(data, status=202)
-
-    def update(self, request, pk=None):
-        ip, exists = self._get_ip(pk)
-        try:
-            self.check_object_permissions(request, (ip, exists))
-        except exceptions.APIException as err:
-            return err.get_response()
-        serializer = serializers.PutIpAddressSerializer(data=self.request.data)
-        if serializer.is_valid():
-            ip = serializer.update(ip, serializer.validated_data)
-            display_serializer = serializers.IpAddressSerializer(ip)
-            data = display_serializer.data
-            return views.Response(data, status=202)
-
-    def delete(self, request, pk=None):
-        ip, exists = self._get_ip(pk)
-        try:
-            self.check_object_permissions(request, (ip, exists))
-        except exceptions.APIException as err:
-            return err.get_response()
-        ip.delete()
-        return views.Response('', status=204)
+    account_field = 'server__account'
+    factory = factories.IpAddressFactory

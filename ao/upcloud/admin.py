@@ -10,3 +10,8 @@ class AccountAdmin(admin.ModelAdmin):
 @admin.register(models.Server)
 class ServerAdmin(admin.ModelAdmin):
     list_display = ('uuid', 'zone', 'title', 'plan', 'state')
+
+
+@admin.register(models.IpAddress)
+class IpAddressAdmin(admin.ModelAdmin):
+    list_display = ('address', 'access', 'family', 'server', 'ptr_record', 'part_of_plan')

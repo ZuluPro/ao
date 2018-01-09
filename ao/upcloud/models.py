@@ -74,11 +74,6 @@ class Account(models.Model):
     class Meta:
         app_label = 'upcloud'
 
-    def clean(self):
-        key = '%s:%s' % (self.username, self.password)
-        key = base64.b64encode(key)
-        self.api_key = key
-
 
 class Zone(models.Model):
     id = models.SlugField(primary_key=True)
@@ -227,11 +222,13 @@ class Storage(models.Model):
 
 class IpAddress(models.Model):
     address = models.GenericIPAddressField(primary_key=True)
-    access = models.CharField(max_length=7, choices=IP_ACCESSES, default='public', blank=True)
-    family = models.CharField(max_length=4, choices=IP_FAMILIES, default='ipv4', blank=True)
+    access = models.CharField(max_length=7, choices=IP_ACCESSES)
+    family = models.CharField(max_length=4, choices=IP_FAMILIES)
     part_of_plan = models.BooleanField(default=False, blank=True)
     ptr_record = models.CharField(max_length=128)
     server = models.ForeignKey(Server)
 
     class Meta:
         app_label = 'upcloud'
+        verbose_name = 'IP address'
+        verbose_name_plural = 'IP addresses'

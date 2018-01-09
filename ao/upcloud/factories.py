@@ -1,3 +1,4 @@
+import base64
 import random
 import ipaddress
 import faker
@@ -7,6 +8,11 @@ from ao.upcloud import models
 
 fake = faker.Faker()
 
+def make_api_key(username, password):
+    key = bytes('%s:%s' % (username, password), 'ascii')
+    key = base64.b64encode(key)
+    return key
+
 
 class AccountFactory(factory.django.DjangoModelFactory):
     class Meta:
@@ -15,6 +21,7 @@ class AccountFactory(factory.django.DjangoModelFactory):
     credits = fuzzy.FuzzyInteger(1, 10**4)
     username = factory.Faker('user_name')
     password = factory.Faker('password')
+    api_key = factory.LazyAttribute(lambda a: make_api_key(a.username, a.password))
 
 
 class ZoneFactory(factory.django.DjangoModelFactory):
@@ -93,7 +100,7 @@ class StorageFactory(factory.django.DjangoModelFactory):
 def make_ip_family(ip):
     if not ip.address:
         ip.address = fake.ipv4()
-    family = 'ipv%d' % ipaddress.ip_address(ip.address).version
+    family = 'IPv%d' % ipaddress.ip_address(ip.address).version
     return family
 
 
