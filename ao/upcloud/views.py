@@ -41,6 +41,7 @@ class APIViewSetMixin(object):
         elif self.request.method == 'PUT':
             serializer_class = self.update_serializer_class
         kwargs['context'] = self.get_serializer_context()
+        serializer_class.account = self.request.user
         return serializer_class(*args, **kwargs)
 
     def get_serializer_context(self):
@@ -67,12 +68,25 @@ class APIViewSetMixin(object):
         return obj
 
 
+class ServerViewSet(APIViewSetMixin, viewsets.ModelViewSet):
+    queryset = models.Server.objects.all()
 
-class ServerViewSet(APIViewSetMixin, viewsets.ViewSet):
+    lookup_value_regex = '[0-9a-z-]+'
+    lookup_field = 'uuid'
+
+    list_serializer_class = serializers.ServerListSerializer
+    retrieve_serializer_class = serializers.ServerDetailSerializer
+    create_serializer_class = serializers.PostServerSerializer
+    # update_serializer_class = serializers.PutServerSerializer
+
     access_level = settings.SERVER_ACCESS_LEVEL
     action_level = settings.SERVER_ACTION_LEVEL
+
     not_exist_exception = exceptions.ServerDoesNotExist
     not_forbidden_exception = exceptions.ServerForbidden
+
+    account_field = 'account'
+    factory = factories.ServerFactory
 
     def _get_server(self, pk=None):
         servers = models.Server.objects.filter(uuid=pk)
@@ -83,29 +97,6 @@ class ServerViewSet(APIViewSetMixin, viewsets.ViewSet):
         if server is None and self.access_level == 0:
             server = factories.ServerFactory(uuid=pk, account=self.request.user)
         return server, exists
-
-    def list(self, request):
-        data = {'servers': {'server': []}}
-        servers = models.Server.objects.all()
-        if self.access_level > 0:
-            servers = servers.filter(account=self.request.user)
-        data['servers']['server'] = [s.detail_format for s in servers]
-        return JsonResponse(data)
-
-    def create(self, request):
-        serializer = serializers.PostServerSerializer(data=self.request.data)
-        if serializer.is_valid():
-            data = serializer.create(self.request.user)
-            return views.Response(data, status=202)
-
-    def retrieve(self, request, pk=None):
-        server, exists = self._get_server(pk)
-        try:
-            self.check_object_permissions(request, (server, exists))
-        except exceptions.APIException as err:
-            return err.get_response()
-        data = {'server': server.detail_format}
-        return JsonResponse(data)
 
     @decorators.detail_route(
         methods=['post'],
@@ -189,3 +180,24 @@ class IpAddressViewSet(APIViewSetMixin, viewsets.ModelViewSet):
 
     account_field = 'server__account'
     factory = factories.IpAddressFactory
+
+
+class StorageViewSet(APIViewSetMixin, viewsets.ModelViewSet):
+    queryset = models.Storage.objects.all()
+
+    lookup_value_regex = '[0-9a-z-]+'
+    lookup_field = 'uuid'
+
+    list_serializer_class = serializers.StorageListSerializer
+    retrieve_serializer_class = serializers.StorageSerializer
+    create_serializer_class = serializers.StorageCreateSerializer
+    update_serializer_class = serializers.StorageUpdateSerializer
+
+    access_level = settings.STORAGE_ACCESS_LEVEL
+    action_level = settings.STORAGE_ACTION_LEVEL
+
+    not_exist_exception = exceptions.StorageNotFound
+    not_forbidden_exception = exceptions.StorageForbidden
+
+    account_field = 'account'
+    factory = factories.StorageFactory

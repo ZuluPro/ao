@@ -1,7 +1,11 @@
 import uuid
 import base64
 import time
+
 from django.db import models
+from django.db.models.signals import post_save
+from django.dispatch import receiver
+
 from . import settings
 
 STORAGE_TIERS = (
@@ -95,6 +99,10 @@ class Plan(models.Model):
         app_label = 'upcloud'
 
 
+def random_host_id():
+    return random.randint(1, 10**10)
+
+
 class Server(models.Model):
     uuid = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     title = models.CharField(max_length=64)
@@ -103,77 +111,17 @@ class Server(models.Model):
     plan = models.ForeignKey(Plan, null=True, blank=True)
     core_number = models.SmallIntegerField(blank=True)
     memory_amount = models.SmallIntegerField(blank=True)
-    state = models.CharField(max_length=11, choices=SERVER_STATES)
+    state = models.CharField(max_length=11, choices=SERVER_STATES, default='started', blank=True)
     zone = models.ForeignKey(Zone)
     firewall = models.BooleanField(default=True, blank=True)
     boot_order = models.CharField(max_length=10, default='disk', blank=True)
-    host = models.IntegerField()
+    host = models.IntegerField(blank=True, default=random_host_id)
     nic_model = models.CharField(max_length=7, default='e1000', choices=NIC_MODELS, blank=True)
     timezone = models.CharField(max_length=40)
     account = models.ForeignKey(Account, null=True, blank=True)
 
     class Meta:
         app_label = 'upcloud'
-
-    @property
-    def list_format(self):
-        data = {
-            'hostname': self.hostname,
-            'licence': self.licence,
-            'state': self.state,
-            'title': self.title,
-            'uuid': str(self.uuid),
-            'zone': self.zone.id,
-            'tags': {'tag': []},
-        }
-        if self.plan is not None:
-            data.update(plan=self.plan.name,
-                        core_number=self.plan.core_number,
-                        memory_amount=self.plan.memory_amount,
-                        plan_ivp4_bytes=0,
-                        plan_ipv6_bytes=0)
-        else:
-            data.update(plan='custom',
-                        core_number=self.core_number,
-                        memory_amount=self.memory_amount)
-        for tag in self.tag_set.all():
-            data['tags']['tag'].append(tag.name)
-        return data
-
-    @property
-    def detail_format(self):
-        data = self.list_format.copy()
-        data.update(boot_order=self.boot_order,
-                    firewall=on_off(self.firewall),
-                    host=self.host,
-                    nic_model=self.nic_model,
-                    storage_devices={'storage_device': []},
-                    ip_addresses={'ip_address': []},
-                    timezone=self.timezone,
-                    # video_model=self.video_model,
-                    # vnc=on_off(self.vnc),
-                    # vnc_host=self.vnc_host,
-                    # vnc_password=self.vnc_password,
-                    # vnc_port=self.vnc_port,
-                    )
-        for storage in self.storage_set.all():
-            storage_data = {
-                'address': storage.address,
-                'part_of_plan': yes_no(storage.part_of_plan),
-                'storage': storage.id,
-                'storage_size': storage.size,
-                'storage_title': storage.title,
-                'type': storage.type,
-            }
-            data['storage_devices']['storage_device'].append(storage_data)
-        for ip in self.ipaddress_set.all():
-            ip_data = {
-                'access': ip.access,
-                'address': ip.address,
-                'family': ip.family,
-            }
-            data['ip_addresses']['ip_address'].append(ip_data)
-        return data
 
     def start(self):
         self.state = 'started'
@@ -189,6 +137,28 @@ class Server(models.Model):
         self.start()
 
 
+@receiver(post_save, sender=Server)
+def server_post_save(sender, instance, created, raw, using, update_fields, **kwargs):
+    if created:
+        if instance.plan:
+            Storage.objects.create(
+                title='Operating system disk',
+                access='private',
+                type='disk',
+                tier=instance.plan.storage_tier,
+                size=instance.plan.storage_size,
+                part_of_plan=True,
+                zone=instance.zone,
+                server=instance,
+                state='online',
+                address='ide:0:1',
+                account=instance.account)
+        else:
+            instance.core_number = instance.plan.core_number
+            instance.memory_amount = instance.plan.memory_amount
+
+
+
 class Tag(models.Model):
     name = models.CharField(max_length=32)
     description = models.CharField(max_length=255)
@@ -201,23 +171,29 @@ class Tag(models.Model):
 class Storage(models.Model):
     uuid = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     title = models.CharField(max_length=64, null=True, blank=True)
-    access = models.CharField(max_length=7, choices=STORAGE_ACCESS)
-    type = models.CharField(max_length=8, choices=STORAGE_TYPES)
-    tier = models.CharField(max_length=7, choices=STORAGE_TIERS)
+    access = models.CharField(max_length=7, choices=STORAGE_ACCESS, blank=True)
+    type = models.CharField(max_length=8, choices=STORAGE_TYPES, blank=True)
+    tier = models.CharField(max_length=7, choices=STORAGE_TIERS, blank=True, default='hdd')
     size = models.SmallIntegerField()
+    license = models.SmallIntegerField(default=0, blank=True)
     part_of_plan = models.BooleanField()
-    zone = models.ForeignKey(Zone)
+    zone = models.ForeignKey(Zone, blank=True)
     backup_rule_interval = models.CharField(max_length=5, choices=BACKUP_RULE_INTERVALS, null=True, blank=True)
     backup_rule_time = models.CharField(max_length=4, null=True, blank=True)
     backup_rule_retention = models.SmallIntegerField(null=True, blank=True)
     server = models.ForeignKey(Server, null=True, blank=True)
-    state = models.CharField(max_length=11, choices=STORAGE_STATES)
+    state = models.CharField(max_length=11, choices=STORAGE_STATES, default='maintenance', blank=True)
     address = models.CharField(max_length=15, null=True, blank=True)
+    backup_of = models.ForeignKey('self', null=True, blank=True)
     favorite = models.BooleanField(default=False)
     account = models.ForeignKey(Account, null=True, blank=True)
 
     class Meta:
         app_label = 'upcloud'
+
+    def initialize(self):
+        self.state = 'online'
+        self.save()
 
 
 class IpAddress(models.Model):

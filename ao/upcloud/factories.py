@@ -58,7 +58,6 @@ def make_memory_amount(server):
 
 SERVER_STATES = [i for i, j in models.SERVER_STATES]
 SERVER_BOOT_ORDERS = [i for i, j in models.SERVER_BOOT_ORDERS]
-NIC_MODELS = [i for i, j in models.NIC_MODELS]
 class ServerFactory(factory.django.DjangoModelFactory):
     class Meta:
         model = 'upcloud.Server'
@@ -69,9 +68,8 @@ class ServerFactory(factory.django.DjangoModelFactory):
     state = fuzzy.FuzzyChoice(SERVER_STATES)
     zone = factory.SubFactory(ZoneFactory)
     firewall = fuzzy.FuzzyChoice((False, True))
-    state = fuzzy.FuzzyChoice(SERVER_BOOT_ORDERS)
+    boot_order = fuzzy.FuzzyChoice(SERVER_BOOT_ORDERS)
     host = fuzzy.FuzzyInteger(1, 8000000000)
-    nic_model = fuzzy.FuzzyChoice(NIC_MODELS)
     timezone = factory.Faker('timezone')
     account = factory.SubFactory(AccountFactory)
 
@@ -80,18 +78,24 @@ class ServerFactory(factory.django.DjangoModelFactory):
     memory_amount = factory.LazyAttribute(make_memory_amount)
 
 
+STORAGE_ACCESS = [i for i, j in models.STORAGE_ACCESS]
+STORAGE_TIERS = [i for i, j in models.STORAGE_TIERS]
+STORAGE_TYPES = [i for i, j in models.STORAGE_TYPES]
+BACKUP_RULE_INTERVALS = [i for i, j in models.BACKUP_RULE_INTERVALS]
 class StorageFactory(factory.django.DjangoModelFactory):
     class Meta:
         model = 'upcloud.Storage'
+        django_get_or_create = (
+        )
 
     title = factory.Faker('user_name')
-    access = fuzzy.FuzzyChoice(models.STORAGE_ACCESS)
-    type = fuzzy.FuzzyChoice(models.STORAGE_TYPES)
-    tier = fuzzy.FuzzyChoice(models.STORAGE_TIERS)
+    access = fuzzy.FuzzyChoice(STORAGE_ACCESS)
+    type = fuzzy.FuzzyChoice(STORAGE_TYPES)
+    tier = fuzzy.FuzzyChoice(STORAGE_TIERS)
     size = fuzzy.FuzzyInteger(10, 1024)
     part_of_plan = fuzzy.FuzzyChoice((False, True))
     zone = factory.SubFactory(ZoneFactory)
-    backup_rule_interval = fuzzy.FuzzyChoice(models.BACKUP_RULE_INTERVALS)
+    backup_rule_interval = fuzzy.FuzzyChoice(BACKUP_RULE_INTERVALS)
     backup_rule_time = factory.Faker('time', pattern='%H%M')
     backup_rule_retention = fuzzy.FuzzyInteger(1, 1095)
     account = factory.SubFactory(AccountFactory)

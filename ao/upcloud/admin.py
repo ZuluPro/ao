@@ -15,3 +15,8 @@ class ServerAdmin(admin.ModelAdmin):
 @admin.register(models.IpAddress)
 class IpAddressAdmin(admin.ModelAdmin):
     list_display = ('address', 'access', 'family', 'server', 'ptr_record', 'part_of_plan')
+
+
+@admin.register(models.Storage)
+class StorageAdmin(admin.ModelAdmin):
+    list_display = ('uuid', 'zone', 'title', 'size', 'tier', 'type', 'state')

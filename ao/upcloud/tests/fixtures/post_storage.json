@@ -1,0 +1,13 @@
+{
+  "storage": {
+    "size": "10",
+    "tier": "maxiops",
+    "title": "My data collection",
+    "zone": "fi-hel1",
+    "backup_rule": {
+      "interval": "daily",
+      "time": "0430",
+      "retention": "365"
+    }
+  }
+}

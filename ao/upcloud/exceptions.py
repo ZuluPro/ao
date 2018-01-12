@@ -49,4 +49,16 @@ class IpAddressNotFound(APIException):
 class IpAddressForbidden(APIException):
     status_code = 403
     default_detail = 'IP_ADDRESS_FORBIDDEN' 
-    default_code = 'The IP address does not exist.'
+    default_code = 'The IP address exists, but is owned by another account.'
+
+
+class StorageNotFound(APIException):
+    status_code = 404
+    default_detail = 'STORAGE_NOT_FOUND' 
+    default_code = 'The storage does not exist.'
+
+
+class StorageForbidden(APIException):
+    status_code = 403
+    default_detail = 'STORAGE_FORBIDDEN' 
+    default_code = 'The storage exists, but is owned by another account.'
