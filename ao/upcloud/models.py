@@ -181,10 +181,10 @@ class Storage(models.Model):
     backup_rule_interval = models.CharField(max_length=5, choices=BACKUP_RULE_INTERVALS, null=True, blank=True)
     backup_rule_time = models.CharField(max_length=4, null=True, blank=True)
     backup_rule_retention = models.SmallIntegerField(null=True, blank=True)
+    backup_of = models.ForeignKey('self', null=True, blank=True)
     server = models.ForeignKey(Server, null=True, blank=True)
     state = models.CharField(max_length=11, choices=STORAGE_STATES, default='maintenance', blank=True)
     address = models.CharField(max_length=15, null=True, blank=True)
-    backup_of = models.ForeignKey('self', null=True, blank=True)
     favorite = models.BooleanField(default=False)
     account = models.ForeignKey(Account, null=True, blank=True)
 
@@ -192,6 +192,15 @@ class Storage(models.Model):
         app_label = 'upcloud'
 
     def initialize(self):
+        self.state = 'online'
+        self.save()
+
+    def initialize_backup(self, origin_uuid):
+        self.state = 'online'
+        self.backup_of = Storage.objects.get(uuid=origin_uuid)
+        self.save()
+
+    def initialize_template(self):
         self.state = 'online'
         self.save()
 

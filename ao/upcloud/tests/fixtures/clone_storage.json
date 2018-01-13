@@ -1,0 +1,7 @@
+{
+  "storage": {
+    "zone": "fi-hel1",
+    "tier": "maxiops",
+    "title": "Clone of operating system disk"
+  }
+}

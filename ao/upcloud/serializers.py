@@ -453,6 +453,7 @@ class PostServerSerializer(ServerDetailSerializer):
 class StorageSerializer(serializers.ModelSerializer):
     """Base Storage Serializer"""
     server = serializers.PrimaryKeyRelatedField(queryset=models.Server.objects.all(), required=False)
+    backups = serializers.PrimaryKeyRelatedField(source='storage_set', read_only=True)
 
     class Meta:
         model = models.Storage
@@ -496,7 +497,9 @@ class StorageSerializer(serializers.ModelSerializer):
             data.pop('backup_rule_retention', None)
             data['backup_rule'] = backup_rule
             # Backup
-            backups = data.pop('backup', [])
+            backups = data.pop('backups', [])
+            if backups:
+                backups = backups.values_list('uuid', flat=True)
             data['backups'] = {'backups': backups}
             # Server
             data['servers'] = {'server': []}
@@ -597,5 +600,117 @@ class StorageUpdateSerializer(StorageSerializer):
         # TODO: Validation
         if settings.STORAGE_ACTION_LEVEL > 0:
             pass
-        utils.delay(setings.STORAGE_MODIFY_DELAY, update_func, **storage_data)
+        # Delay modif
+        utils.delay(settings.STORAGE_MODIFY_DELAY, update_func, **storage_data)
         return self.instance
+
+
+class StorageCloneSerializer(StorageSerializer):
+    class Meta:
+        model = models.Storage
+        fields = (
+            'zone',
+            'title',
+            'tier'
+        )
+
+    def validate_empty_values(self, data):
+        data = data.get('storage')
+        return super(StorageCloneSerializer, self).validate_empty_values(data)
+
+    def clone(self):
+        self.instance.uuid = None
+        self.instance.state = 'maintenance'
+        self.instance.backup_rule_interval = None
+        self.instance.backup_rule_time = None
+        self.instance.backup_rule_interval = None
+        self.instance.part_of_plan = False
+        self.instance.address = None
+        self.instance.favorite = False
+        self.instance.server = None
+        self.instance.zone = self.validated_data['zone']
+        self.instance.title = self.validated_data['title']
+        self.instance.tier = self.validated_data['tier']
+        self.instance.save()
+        # Delay online state
+        update_func = models.Storage.objects.filter(uuid=self.instance.uuid).update
+        utils.delay(settings.STORAGE_CLONE_DELAY, update_func, state='online')
+        return self.instance
+
+
+class StorageBackupSerializer(StorageSerializer):
+    class Meta:
+        model = models.Storage
+        fields = ('title',)
+
+    def validate_empty_values(self, data):
+        data = data.get('storage')
+        return super(StorageBackupSerializer, self).validate_empty_values(data)
+
+    def backup(self):
+        # Change source state
+        self.instance.state = 'backup'
+        self.instance.save()
+        update_func = models.Storage.objects.filter(uuid=self.instance.uuid).update
+        utils.delay(settings.STORAGE_BACKUP_DELAY, update_func, state='online')
+        # Make backup
+        origin_uuid = self.instance.uuid
+        self.instance.uuid = None
+        self.instance.state = 'maintenance'
+        self.instance.type = 'backup'
+        self.instance.backup_of = models.Storage.objects.get(uuid=origin_uuid)
+        self.instance.backup_rule_interval = None
+        self.instance.backup_rule_time = None
+        self.instance.backup_rule_interval = None
+        self.instance.part_of_plan = False
+        self.instance.address = None
+        self.instance.favorite = False
+        self.instance.server = None
+        self.instance.title = self.validated_data['title']
+        self.instance.save()
+        # Delay online state
+        update_func = models.Storage.objects.filter(uuid=self.instance.uuid).update
+        utils.delay(settings.STORAGE_BACKUP_DELAY, self.instance.initialize_backup, origin_uuid=origin_uuid)
+        return self.instance
+
+    def to_representation(self, instance):
+        data = super(StorageBackupSerializer, self).to_representation(instance)
+        data['storage']['origin'] = instance.backup_of.uuid
+        data['storage']['progress'] = 0
+        return data
+
+
+class StorageTemplatizeSerializer(StorageSerializer):
+    class Meta:
+        model = models.Storage
+        fields = ('title',)
+
+    def validate_empty_values(self, data):
+        data = data.get('storage')
+        return super(StorageTemplatizeSerializer, self).validate_empty_values(data)
+
+    def templatize(self):
+        # Make backup
+        origin_uuid = self.instance.uuid
+        self.instance.uuid = None
+        self.instance.state = 'maintenance'
+        self.instance.type = 'template'
+        self.instance.backup_of = models.Storage.objects.get(uuid=origin_uuid)
+        self.instance.backup_rule_interval = None
+        self.instance.backup_rule_time = None
+        self.instance.backup_rule_interval = None
+        self.instance.part_of_plan = False
+        self.instance.address = None
+        self.instance.favorite = False
+        self.instance.server = None
+        self.instance.title = self.validated_data['title']
+        self.instance.save()
+        # Delay online state
+        update_func = models.Storage.objects.filter(uuid=self.instance.uuid).update
+        utils.delay(settings.STORAGE_TEMPLATIZE_DELAY, self.instance.initialize_template)
+        return self.instance
+
+    def to_representation(self, instance):
+        data = super(StorageTemplatizeSerializer, self).to_representation(instance)
+        data['storage']['progress'] = 0
+        return data

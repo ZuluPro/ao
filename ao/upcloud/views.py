@@ -201,3 +201,38 @@ class StorageViewSet(APIViewSetMixin, viewsets.ModelViewSet):
 
     account_field = 'account'
     factory = factories.StorageFactory
+
+    @decorators.detail_route(
+        methods=['post'])
+    def clone(self, request, uuid=None):
+        storage = self.get_object()
+        serializer = serializers.StorageCloneSerializer(storage, data=request.data)
+        if serializer.is_valid():
+            serializer.clone()
+            return JsonResponse(serializer.data, status=201)
+        # Response
+        return HttpResponse(serializer.errors, status=400)
+
+    @decorators.detail_route(
+        methods=['post'])
+    def backup(self, request, uuid=None):
+        storage = self.get_object()
+        serializer = serializers.StorageBackupSerializer(storage, data=request.data)
+        if serializer.is_valid():
+            instance = serializer.backup()
+            data = serializer.to_representation(instance)
+            return JsonResponse(data, status=201)
+        # Response
+        return HttpResponse(serializer.errors, status=400)
+
+    @decorators.detail_route(
+        methods=['post'])
+    def templatize(self, request, uuid=None):
+        storage = self.get_object()
+        serializer = serializers.StorageTemplatizeSerializer(storage, data=request.data)
+        if serializer.is_valid():
+            instance = serializer.templatize()
+            data = serializer.to_representation(instance)
+            return JsonResponse(data, status=201)
+        # Response
+        return HttpResponse(serializer.errors, status=400)
