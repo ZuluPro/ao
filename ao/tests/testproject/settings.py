@@ -14,7 +14,8 @@ INSTALLED_APPS = (
     'ao.upcloud',
 )
 
-MIDDLEWARE_CLASSES = (
+MIDDLEWARE = (
+    'ao.middlewares.ProxyMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'ao.admin.middlewares.AdminAuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
@@ -52,6 +53,8 @@ TIME_ZONE = 'UTC'
 USE_I18N = True
 USE_L10N = True
 USE_TZ = True
+
+APPEND_SLASH = False
 
 REST_FRAMEWORK = {
     'EXCEPTION_HANDLER': 'ao.core.views.exception_handler',
