@@ -9,6 +9,9 @@ class ProxyMiddleware:
         self.get_response = get_response
 
     def __call__(self, request):
+        if request.method == 'CONNECT':
+            from django.http import HttpResponse
+            return HttpResponse()
         resolver = handlers.base.get_resolver('ao.cloud_urls')
         old_resolver_regex = resolver.regex
         resolver.regex = re.compile('^')
