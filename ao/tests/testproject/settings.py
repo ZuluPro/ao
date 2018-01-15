@@ -10,12 +10,13 @@ INSTALLED_APPS = (
     'django.contrib.auth',
     'django.contrib.sessions',
     'django.contrib.admin',
+    'ao',
     'ao.msazure',
     'ao.upcloud',
 )
 
 MIDDLEWARE = (
-    'ao.middlewares.ProxyMiddleware',
+    # 'ao.middlewares.ProxyMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'ao.admin.middlewares.AdminAuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
@@ -60,3 +61,9 @@ REST_FRAMEWORK = {
     'EXCEPTION_HANDLER': 'ao.core.views.exception_handler',
     'DEFAULT_AUTHENTICATION_CLASSES': (),
 }
+
+try:
+    __import__('imp').find_module('django_extensions')
+    INSTALLED_APPS = INSTALLED_APPS + ('django_extensions',)
+except ImportError:
+    pass
