@@ -90,5 +90,5 @@ def make_prices(account):
 
 
 def make_timezones():
-    data = {'timezones': {'timezone': pytz.all_timezones,}}
+    data = {'timezones': {'timezone': pytz.all_timezones}}
     return data

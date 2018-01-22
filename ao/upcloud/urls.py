@@ -12,6 +12,7 @@ urlpatterns = [
     url(r'^[0-9\.]*/price', views.PriceView.as_view(), name='price'),
     url(r'^[0-9\.]*/zone', views.ZoneView.as_view(), name='zone'),
     url(r'^[0-9\.]*/timezone', views.TimezoneView.as_view(), name='timezone'),
+    url(r'^[0-9\.]*/plan', views.PlanView.as_view(), name='plan'),
 ]
 
 urlpatterns += router.urls

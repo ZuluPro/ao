@@ -54,6 +54,31 @@ class ZoneSerializer(serializers.Serializer):
         data = super(ZoneSerializer, self).to_representation(instance)
         data = {'zones': {'zone': data}}
         return data
+
+
+class ListPlanSerializer(serializers.ListSerializer):
+    """list serializer"""
+    def to_representation(self, instance):
+        data = super(ListPlanSerializer, self).to_representation(instance)
+        data = {'plans': {'plan': data}}
+        return data
+
+    @property
+    def data(self):
+        super(ListPlanSerializer, self).data
+        return self._data
+
+
+class PlanSerializer(serializers.Serializer):
+    class Meta:
+        model = models.Plan
+        fields = '__all__'
+        list_serializer_class = ListPlanSerializer
+
+    def to_representation(self, instance):
+        data = super(PlanSerializer, self).to_representation(instance)
+        data = {'plans': {'plan': data}}
+        return data
     
 
 class ListIpAddressSerializer(serializers.ListSerializer):

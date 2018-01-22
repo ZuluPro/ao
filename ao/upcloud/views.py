@@ -95,6 +95,13 @@ class TimezoneView(APIViewSetMixin, views.APIView):
         return Response(data)
 
 
+class PlanView(APIViewSetMixin, views.APIView):
+    def get(self, request, format=None):
+        plans = models.Plan.objects.all()
+        serializer = serializers.PlanSerializer(plans, many=True)
+        return Response(serializer.data)
+
+
 class ServerViewSet(APIViewSetMixin, viewsets.ModelViewSet):
     queryset = models.Server.objects.all()
 
