@@ -7,4 +7,8 @@ router.register(r'[0-9\.]*/server', views.ServerViewSet, base_name='server')
 router.register(r'[0-9\.]*/ip_address', views.IpAddressViewSet, base_name='ip_address')
 router.register(r'[0-9\.]*/storage', views.StorageViewSet, base_name='storage')
 
-urlpatterns = router.urls
+urlpatterns = [
+    url(r'^[0-9\.]*/account', views.AccountView.as_view(), name='account'),
+]
+
+urlpatterns += router.urls

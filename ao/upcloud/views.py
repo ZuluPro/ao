@@ -7,6 +7,7 @@ from django.views.generic import View
 from rest_framework import views
 from rest_framework import viewsets
 from rest_framework import decorators
+from rest_framework.response import Response
 
 from ao.core import utils
 from . import settings
@@ -66,6 +67,12 @@ class APIViewSetMixin(object):
             else:
                 raise
         return obj
+
+
+class AccountView(APIViewSetMixin, views.APIView):
+    def get(self, request, format=None):
+        serializer = serializers.AccountSerializer(self.request.user)
+        return Response(serializer.data)
 
 
 class ServerViewSet(APIViewSetMixin, viewsets.ModelViewSet):

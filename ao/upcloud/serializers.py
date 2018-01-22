@@ -12,6 +12,22 @@ class SerializerMixin(object):
     def __init__(self, *args, **kwargs):
         self.account = kwargs.pop('account', None)
         super(SerializerMixin, self).__init__(*args, **kwargs)
+
+
+class AccountSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = models.Account
+        fields = '__all__'
+
+    def to_representation(self, instance):
+        data = super(AccountSerializer, self).to_representation(instance)
+        data = {
+            'account': {
+                'credits': data['credits'],
+                'username': data['username']
+            }
+        }
+        return data
     
 
 class ListIpAddressSerializer(serializers.ListSerializer):
