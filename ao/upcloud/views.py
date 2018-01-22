@@ -82,6 +82,13 @@ class PriceView(APIViewSetMixin, views.APIView):
         return Response(data)
 
 
+class ZoneView(APIViewSetMixin, views.APIView):
+    def get(self, request, format=None):
+        zones = models.Zone.objects.all()
+        serializer = serializers.ZoneSerializer(zones, many=True)
+        return Response(serializer.data)
+
+
 class ServerViewSet(APIViewSetMixin, viewsets.ModelViewSet):
     queryset = models.Server.objects.all()
 

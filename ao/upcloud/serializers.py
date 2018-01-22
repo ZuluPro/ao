@@ -28,6 +28,32 @@ class AccountSerializer(serializers.ModelSerializer):
             }
         }
         return data
+
+
+class ListZoneSerializer(serializers.ListSerializer):
+    """list serializer"""
+    def to_representation(self, instance):
+        data = super(ListZoneSerializer, self).to_representation(instance)
+        data = {'zones': {'zone': data}}
+        return data
+
+    @property
+    def data(self):
+        super(ListZoneSerializer, self).data
+        return self._data
+
+
+class ZoneSerializer(serializers.Serializer):
+    """list serializer"""
+    class Meta:
+        model = models.Zone
+        fields = '__all__'
+        list_serializer_class = ListZoneSerializer
+
+    def to_representation(self, instance):
+        data = super(ZoneSerializer, self).to_representation(instance)
+        data = {'zones': {'zone': data}}
+        return data
     
 
 class ListIpAddressSerializer(serializers.ListSerializer):
