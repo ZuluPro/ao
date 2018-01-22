@@ -11,6 +11,7 @@ urlpatterns = [
     url(r'^[0-9\.]*/account', views.AccountView.as_view(), name='account'),
     url(r'^[0-9\.]*/price', views.PriceView.as_view(), name='price'),
     url(r'^[0-9\.]*/zone', views.ZoneView.as_view(), name='zone'),
+    url(r'^[0-9\.]*/timezone', views.TimezoneView.as_view(), name='timezone'),
 ]
 
 urlpatterns += router.urls

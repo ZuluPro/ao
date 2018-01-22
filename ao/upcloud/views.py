@@ -89,6 +89,12 @@ class ZoneView(APIViewSetMixin, views.APIView):
         return Response(serializer.data)
 
 
+class TimezoneView(APIViewSetMixin, views.APIView):
+    def get(self, request, format=None):
+        data = upcloud_utils.make_timezones()
+        return Response(data)
+
+
 class ServerViewSet(APIViewSetMixin, viewsets.ModelViewSet):
     queryset = models.Server.objects.all()
 

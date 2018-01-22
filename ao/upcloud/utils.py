@@ -1,3 +1,4 @@
+import pytz
 from django.db.models import aggregates
 from . import models
 
@@ -85,4 +86,9 @@ def make_prices(account):
                 "amount": amount,
                 "price": price,
             })
+    return data
+
+
+def make_timezones():
+    data = {'timezones': {'timezone': pytz.all_timezones,}}
     return data
