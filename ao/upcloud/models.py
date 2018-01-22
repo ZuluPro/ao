@@ -83,6 +83,42 @@ class Zone(models.Model):
     id = models.SlugField(primary_key=True)
     description = models.CharField(max_length=20)
 
+    io_request_backup = models.IntegerField(default=0)
+    io_request_hdd = models.IntegerField(default=0)
+    io_request_maxiops = models.IntegerField(default=0)
+    public_ipv4_bandwidth_in = models.IntegerField(default=0)
+    public_ipv4_bandwidth_out = models.IntegerField(default=0)
+    public_ipv6_bandwidth_in = models.IntegerField(default=0)
+    public_ipv6_bandwidth_out = models.IntegerField(default=0)
+
+    firewall_price = models.DecimalField(max_digits=4, decimal_places=3)
+    io_request_backup_price = models.DecimalField(max_digits=4, decimal_places=3)
+    io_request_hdd_price = models.DecimalField(max_digits=4, decimal_places=3)
+    io_request_maxiops_price = models.DecimalField(max_digits=4, decimal_places=3)
+    ipv4_address_price = models.DecimalField(max_digits=4, decimal_places=3)
+    ipv6_address_price = models.DecimalField(max_digits=4, decimal_places=3)
+    public_ipv4_bandwidth_in_price = models.DecimalField(max_digits=4, decimal_places=3)
+    public_ipv4_bandwidth_out_price = models.DecimalField(max_digits=4, decimal_places=3)
+    public_ipv6_bandwidth_in_price = models.DecimalField(max_digits=4, decimal_places=3)
+    public_ipv6_bandwidth_out_price = models.DecimalField(max_digits=4, decimal_places=3)
+    server_core_price = models.DecimalField(max_digits=4, decimal_places=3)
+    server_memory_price = models.DecimalField(max_digits=4, decimal_places=3)
+    storage_backup_price = models.DecimalField(max_digits=4, decimal_places=3)
+    storage_hdd_price = models.DecimalField(max_digits=4, decimal_places=3)
+    storage_maxiops_price = models.DecimalField(max_digits=4, decimal_places=3)
+
+    plan_1cpu_price = models.DecimalField(max_digits=4, decimal_places=3)
+    plan_2cpu_price = models.DecimalField(max_digits=4, decimal_places=3)
+    plan_4cpu_price = models.DecimalField(max_digits=4, decimal_places=3)
+    plan_6cpu_price = models.DecimalField(max_digits=4, decimal_places=3)
+    plan_8cpu_price = models.DecimalField(max_digits=4, decimal_places=3)
+    plan_12cpu_price = models.DecimalField(max_digits=4, decimal_places=3)
+    plan_16cpu_price = models.DecimalField(max_digits=4, decimal_places=3)
+    plan_20cpu_price = models.DecimalField(max_digits=4, decimal_places=3)
+
+    windows_standard_price = models.DecimalField(max_digits=4, decimal_places=3)
+    windows_datacenter_price = models.DecimalField(max_digits=4, decimal_places=3)
+
     class Meta:
         app_label = 'upcloud'
 

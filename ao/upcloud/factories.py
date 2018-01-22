@@ -31,6 +31,35 @@ class ZoneFactory(factory.django.DjangoModelFactory):
     description = factory.Faker('city')
     id = factory.LazyAttribute(lambda a: fake.slug(a.description))
 
+    firewall_price = fuzzy.FuzzyDecimal(0.1, 1)
+
+    io_request_backup_price = fuzzy.FuzzyDecimal(0.1, 1)
+    io_request_hdd_price = fuzzy.FuzzyDecimal(0.1, 1)
+    io_request_maxiops_price = fuzzy.FuzzyDecimal(0.1, 1)
+    ipv4_address_price = fuzzy.FuzzyDecimal(0.1, 1)
+    ipv6_address_price = fuzzy.FuzzyDecimal(0.1, 1)
+    public_ipv4_bandwidth_in_price = fuzzy.FuzzyDecimal(0.1, 1)
+    public_ipv4_bandwidth_out_price = fuzzy.FuzzyDecimal(0.1, 1)
+    public_ipv6_bandwidth_in_price = fuzzy.FuzzyDecimal(0.1, 1)
+    public_ipv6_bandwidth_out_price = fuzzy.FuzzyDecimal(0.1, 1)
+    server_core_price = fuzzy.FuzzyDecimal(0.1, 1)
+    server_memory_price = fuzzy.FuzzyDecimal(0.1, 1)
+    storage_backup_price = fuzzy.FuzzyDecimal(0.1, 1)
+    storage_hdd_price = fuzzy.FuzzyDecimal(0.1, 1)
+    storage_maxiops_price = fuzzy.FuzzyDecimal(0.1, 1)
+
+    plan_1cpu_price = fuzzy.FuzzyDecimal(0.1, 1)
+    plan_2cpu_price = fuzzy.FuzzyDecimal(0.1, 1)
+    plan_4cpu_price = fuzzy.FuzzyDecimal(0.1, 1)
+    plan_6cpu_price = fuzzy.FuzzyDecimal(0.1, 1)
+    plan_8cpu_price = fuzzy.FuzzyDecimal(0.1, 1)
+    plan_12cpu_price = fuzzy.FuzzyDecimal(0.1, 1)
+    plan_16cpu_price = fuzzy.FuzzyDecimal(0.1, 1)
+    plan_20cpu_price = fuzzy.FuzzyDecimal(0.1, 1)
+
+    windows_standard_price = fuzzy.FuzzyDecimal(0.1, 1)
+    windows_datacenter_price = fuzzy.FuzzyDecimal(0.1, 1)
+
 
 class PlanFactory(factory.django.DjangoModelFactory):
     class Meta:

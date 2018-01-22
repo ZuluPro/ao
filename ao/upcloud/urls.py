@@ -9,6 +9,7 @@ router.register(r'[0-9\.]*/storage', views.StorageViewSet, base_name='storage')
 
 urlpatterns = [
     url(r'^[0-9\.]*/account', views.AccountView.as_view(), name='account'),
+    url(r'^[0-9\.]*/price', views.PriceView.as_view(), name='price'),
 ]
 
 urlpatterns += router.urls

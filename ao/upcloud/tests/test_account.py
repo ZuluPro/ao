@@ -6,7 +6,7 @@ from ao.upcloud import factories
 class AccountViewTest(APITestCase):
     url = reverse('upcloud:account')
 
-    def test_list_empty(self):
+    def test_get(self):
         response = self.client.get(self.url)
         self.assertIn('account', response.data)
         self.assertIn('credits', response.data['account'])

@@ -17,6 +17,7 @@ from . import authentications
 from . import permissions
 from . import serializers
 from . import exceptions
+from . import utils as upcloud_utils
 
 
 class APIViewSetMixin(object):
@@ -73,6 +74,12 @@ class AccountView(APIViewSetMixin, views.APIView):
     def get(self, request, format=None):
         serializer = serializers.AccountSerializer(self.request.user)
         return Response(serializer.data)
+
+
+class PriceView(APIViewSetMixin, views.APIView):
+    def get(self, request, format=None):
+        data = upcloud_utils.make_prices(request.user)
+        return Response(data)
 
 
 class ServerViewSet(APIViewSetMixin, viewsets.ModelViewSet):
