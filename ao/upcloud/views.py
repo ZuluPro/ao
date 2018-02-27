@@ -63,7 +63,8 @@ class APIViewSetMixin(object):
         except Http404 as err:
             if self.access_level == 0:
                 obj_attrs = self._get_factory_kwargs()
-                obj_attrs.update(self.kwargs)
+                model_fields = [i.name for i in self.queryset.model._meta.fields]
+                obj_attrs.update({k: v for k, v in self.kwargs.items() if k in model_fields})
                 obj = self.factory(**obj_attrs)
             else:
                 raise
@@ -194,6 +195,24 @@ class ServerViewSet(APIViewSetMixin, viewsets.ModelViewSet):
         # Response
         return HttpResponse('', status=204)
 
+    @decorators.detail_route()
+    def firewall_rule(self, request, uuid):
+        server = self.get_object()
+        fw_rules = server.firewallrule_set.all()
+        serializer = serializers.FirewallRuleSerializer(fw_rules, many=True)
+        return JsonResponse(serializer.data, status=200)
+
+    @decorators.detail_route(
+        url_name='firewall-rule-detail',
+        url_path=r'firewall_rule/(?P<rule_id>\d*)')
+    def firewall_rule_detail(self, request, uuid, rule_id):
+        server = self.get_object()
+        fw_rule = server.firewallrule_set.filter(id=rule_id).first()
+        if fw_rule is None and settings.FIREWALL_RULE_ACCESS_LEVEL == 0:
+            fw_rule = factories.FirewallRuleFactory.create(server=server)
+        serializer = serializers.FirewallRuleSerializer(fw_rule)
+        return JsonResponse(serializer.data, status=200)
+
 
 class IpAddressViewSet(APIViewSetMixin, viewsets.ModelViewSet):
     queryset = models.IpAddress.objects.all()
@@ -270,3 +289,57 @@ class StorageViewSet(APIViewSetMixin, viewsets.ModelViewSet):
             return JsonResponse(data, status=201)
         # Response
         return HttpResponse(serializer.errors, status=400)
+
+    @decorators.list_route()
+    def public(self, request):
+        qs = self.get_queryset()
+        qs = qs.filter(account=None)
+        serializer = self.list_serializer_class(qs, many=True)
+        return JsonResponse(serializer.data, status=200)
+
+    @decorators.list_route()
+    def private(self, request):
+        qs = self.get_queryset()
+        qs = qs.filter(account=self.request.user)
+        serializer = self.list_serializer_class(qs, many=True)
+        return JsonResponse(serializer.data, status=200)
+
+    @decorators.list_route()
+    def normal(self, request):
+        qs = self.get_queryset()
+        qs = qs.filter(account=self.request.user,
+                       type='normal')
+        serializer = self.list_serializer_class(qs, many=True)
+        return JsonResponse(serializer.data, status=200)
+
+    @decorators.list_route()
+    def backup(self, request):
+        qs = self.get_queryset()
+        qs = qs.filter(account=self.request.user,
+                       type='backup')
+        serializer = self.list_serializer_class(qs, many=True)
+        return JsonResponse(serializer.data, status=200)
+
+    @decorators.list_route()
+    def cdrom(self, request):
+        qs = self.get_queryset()
+        qs = qs.filter(account=self.request.user,
+                       type='cdrom')
+        serializer = self.list_serializer_class(qs, many=True)
+        return JsonResponse(serializer.data, status=200)
+
+    @decorators.list_route()
+    def template(self, request):
+        qs = self.get_queryset()
+        qs = qs.filter(account=self.request.user,
+                       type='template')
+        serializer = self.list_serializer_class(qs, many=True)
+        return JsonResponse(serializer.data, status=200)
+
+    @decorators.list_route()
+    def favorite(self, request):
+        qs = self.get_queryset()
+        qs = qs.filter(account=self.request.user,
+                       favorite=True)
+        serializer = self.list_serializer_class(qs, many=True)
+        return JsonResponse(serializer.data, status=200)

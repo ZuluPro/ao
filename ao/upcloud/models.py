@@ -60,6 +60,19 @@ IP_FAMILIES = (
     ('IPv4', 'IPv4'),
     ('IPv6', 'IPv6'),
 )
+FIREWALL_RULE_ACTIONS = (
+    ('accept', 'accept'),
+    ('drop', 'drop'),
+)
+FIREWALL_RULE_DIRECTIONS = (
+    ('in', 'in'),
+    ('out', 'out'),
+)
+FIREWALL_RULE_PROTOCOLS = (
+    ('tcp', 'tcp'),
+    ('udp', 'udp'),
+    ('icmp', 'icmp'),
+)
 
 def on_off(value):
     return 'on' if value else 'off'
@@ -253,3 +266,30 @@ class IpAddress(models.Model):
         app_label = 'upcloud'
         verbose_name = 'IP address'
         verbose_name_plural = 'IP addresses'
+
+
+class FirewallRule(models.Model):
+    server = models.ForeignKey(Server)
+    action = models.CharField(max_length=6, choices=FIREWALL_RULE_ACTIONS)
+    comment = models.CharField(max_length=250, blank=True, null=True)
+
+    direction = models.CharField(max_length=3, choices=FIREWALL_RULE_DIRECTIONS)
+    family = models.CharField(max_length=4, choices=IP_FAMILIES)
+    protocol = models.CharField(max_length=4, choices=FIREWALL_RULE_PROTOCOLS, null=True, blank=True) 
+    icmp_type = models.PositiveSmallIntegerField(null=True, blank=True)
+    position = models.PositiveSmallIntegerField(null=True, blank=True)
+
+    source_address_start = models.GenericIPAddressField(null=True, blank=True)
+    source_address_end = models.GenericIPAddressField(null=True, blank=True)
+    source_port_start = models.PositiveIntegerField(null=True, blank=True)
+    source_port_end = models.PositiveIntegerField(null=True, blank=True)
+
+    destination_address_start = models.GenericIPAddressField(null=True, blank=True)
+    destination_address_end = models.GenericIPAddressField(null=True, blank=True)
+    destination_port_start = models.PositiveIntegerField(null=True, blank=True)
+    destination_port_end = models.PositiveIntegerField(null=True, blank=True)
+
+    class Meta:
+        app_label = 'upcloud'
+        verbose_name = 'Firewall rule'
+        verbose_name_plural = 'Firewall rule'

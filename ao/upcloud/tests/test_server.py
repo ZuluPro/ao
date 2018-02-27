@@ -1,3 +1,4 @@
+import uuid
 from mock import patch
 from rest_framework.test import APITestCase
 from rest_framework.reverse import reverse
@@ -52,3 +53,30 @@ class ListServerTest(APITestCase):
         servers.update({str(o.uuid): o for o in factories.ServerFactory.create_batch(3)})
         response = self.client.get(self.url, HTTP_AUTHORIZATION='Basic ' + account.api_key.decode())
         self.assertEqual(len(response.data['servers']['server']), 3)
+
+
+class ListFirewallRuleTest(APITestCase):
+
+    def test_list_empty(self):
+        url = reverse('upcloud:server-firewall-rule', args=[str(uuid.uuid4())])
+        response = self.client.get(url)
+        data = {'firewall_rules': {'firewall_rule': []}}
+        self.assertEqual(data, response.json())
+
+    def test_list_empty(self):
+        server = factories.ServerFactory()
+        fw_rules = factories.FirewallRuleFactory.create_batch(3, server=server)
+        url = reverse('upcloud:server-firewall-rule', args=[str(server.uuid)])
+        response = self.client.get(url)
+        print(response.json())
+        data = {'firewall_rules': {'firewall_rule': []}}
+        self.assertEqual(data, response.json())
+
+
+class GetFirewallRuleTest(APITestCase):
+
+    def test_get_empty(self):
+        url = reverse('upcloud:server-firewall-rule-detail', args=[str(uuid.uuid4()), 1])
+        response = self.client.get(url)
+        data = {'firewall_rule': {}}
+        self.assertEqual(data, response.json())

@@ -8,6 +8,14 @@ from ao.upcloud import models
 
 fake = faker.Faker()
 
+STORAGE_ACCESS = [i for i, j in models.STORAGE_ACCESS]
+STORAGE_TIERS = [i for i, j in models.STORAGE_TIERS]
+STORAGE_TYPES = [i for i, j in models.STORAGE_TYPES]
+BACKUP_RULE_INTERVALS = [i for i, j in models.BACKUP_RULE_INTERVALS]
+FIREWALL_RULE_ACTIONS = [i for i, j in models.FIREWALL_RULE_ACTIONS]
+FIREWALL_RULE_DIRECTIONS = [i for i, j in models.FIREWALL_RULE_DIRECTIONS]
+FIREWALL_RULE_PROTOCOLS = [i for i, j in models.FIREWALL_RULE_PROTOCOLS]
+
 def make_api_key(username, password):
     key = bytes('%s:%s' % (username, password), 'ascii')
     key = base64.b64encode(key)
@@ -107,10 +115,6 @@ class ServerFactory(factory.django.DjangoModelFactory):
     memory_amount = factory.LazyAttribute(make_memory_amount)
 
 
-STORAGE_ACCESS = [i for i, j in models.STORAGE_ACCESS]
-STORAGE_TIERS = [i for i, j in models.STORAGE_TIERS]
-STORAGE_TYPES = [i for i, j in models.STORAGE_TYPES]
-BACKUP_RULE_INTERVALS = [i for i, j in models.BACKUP_RULE_INTERVALS]
 class StorageFactory(factory.django.DjangoModelFactory):
     class Meta:
         model = 'upcloud.Storage'
@@ -160,3 +164,18 @@ class IpAddressFactory(factory.django.DjangoModelFactory):
     part_of_plan = fuzzy.FuzzyChoice((False, True))
     ptr_record = factory.Faker('domain_name')
     server = factory.SubFactory(ServerFactory)
+
+
+class FirewallRuleFactory(factory.django.DjangoModelFactory):
+    class Meta:
+        model = 'upcloud.FirewallRule'
+
+    server = factory.SubFactory(ServerFactory)
+    action = fuzzy.FuzzyChoice(FIREWALL_RULE_ACTIONS)
+    comment = factory.Faker('sentence')
+
+    direction = fuzzy.FuzzyChoice(FIREWALL_RULE_DIRECTIONS)
+    # family = factory.LazyAttribute(make_ip_family)
+    protocol = fuzzy.FuzzyChoice(FIREWALL_RULE_PROTOCOLS)
+    icmp_type = fuzzy.FuzzyInteger(0, 255)
+    position = fuzzy.FuzzyInteger(1, 1000)

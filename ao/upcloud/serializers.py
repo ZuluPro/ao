@@ -781,3 +781,32 @@ class StorageTemplatizeSerializer(StorageSerializer):
         data = super(StorageTemplatizeSerializer, self).to_representation(instance)
         data['storage']['progress'] = 0
         return data
+
+
+class ListFirewallRuleSerializer(serializers.ListSerializer):
+    """list serializer"""
+    def to_representation(self, instance):
+        data = super(ListFirewallRuleSerializer, self).to_representation(instance)
+        data = [i['firewall_rule'] for i in data]
+        data = {'firewall_rules': {'firewall_rule': data}}
+        return data
+
+    @property
+    def data(self):
+        super(ListFirewallRuleSerializer, self).data
+        return self._data
+
+
+class FirewallRuleSerializer(serializers.ModelSerializer):
+    action = fields.CharField()
+
+    class Meta:
+        model = models.FirewallRule
+        exclude = ()
+        list_serializer_class = ListFirewallRuleSerializer
+
+    def to_representation(self, instance):
+        data = super(FirewallRuleSerializer, self).to_representation(instance)
+        import ipdb; ipdb.set_trace()
+        data = {'firewall_rule': data}
+        return data
